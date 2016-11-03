@@ -20,15 +20,13 @@ import de.hpi.isg.mdms.java.fk.classifiers.*;
 import de.hpi.isg.mdms.java.fk.feature.*;
 import de.hpi.isg.mdms.java.fk.ml.classifier.AbstractClassifier;
 import de.hpi.isg.mdms.java.fk.ml.classifier.NaiveBayes;
-import de.hpi.isg.mdms.java.fk.ml.evaluation.ClassifierEvaluation;
-import de.hpi.isg.mdms.java.fk.ml.evaluation.FMeasureEvaluation;
+import de.hpi.isg.mdms.java.fk.ml.evaluation.CrossValidation;
+import de.hpi.isg.mdms.java.fk.ml.evaluation.FMeasure;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.targets.Target;
 import de.hpi.isg.mdms.model.util.IdUtils;
 import de.hpi.isg.mdms.rdbms.SQLiteInterface;
 import it.unimi.dsi.fastutil.ints.*;
-import it.unimi.dsi.fastutil.objects.Object2IntMap;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Function;
@@ -160,6 +158,10 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
         classifier.setTestset(dataset);
         classifier.train();
         classifier.predict();
+
+        CrossValidation crossValidation = new CrossValidation(dataset, classifier);
+        crossValidation.execute();
+        crossValidation.getEvaluation().getResultByMetricName(FMeasure.class.getSimpleName());
 
         // Calculate the score for all the inclusion dependencies.
         final List<InclusionDependencyRating> indRatings = relevantInds.stream()

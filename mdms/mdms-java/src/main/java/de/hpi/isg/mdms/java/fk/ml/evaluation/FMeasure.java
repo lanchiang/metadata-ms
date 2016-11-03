@@ -4,39 +4,37 @@ import de.hpi.isg.mdms.java.fk.Instance;
 import de.hpi.isg.mdms.java.fk.UnaryForeignKeyCandidate;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
-public class FMeasureEvaluation extends ClassifierEvaluation {
-
-
-    private Instance.Result evaluatedLabel;
+/**
+ * @author Lan Jiang
+ */
+public class FMeasure extends Metric {
 
     private double beta = 1.0;
 
     private double fscore;
 
-    public FMeasureEvaluation(Instance.Result evaluatedLabel) {
-        this.evaluatedLabel = evaluatedLabel;
+    public FMeasure() {
     }
 
-    public FMeasureEvaluation(Instance.Result evaluatedLabel, double beta) {
-        this.evaluatedLabel = evaluatedLabel;
+    public FMeasure(double beta) {
         this.beta = beta;
     }
 
     @Override
-    public void evaluate() {
-        if (!checkIndentity()) return;
-
-        fscore(beta);
+    public void calculateMetric(Map<UnaryForeignKeyCandidate, Instance.Result> groundTruth,
+                                Map<UnaryForeignKeyCandidate, Instance.Result> predicted,
+                                Instance.Result evaluatedLabel) {
+        double precision = precision(groundTruth, predicted, evaluatedLabel);
+        double recall = recall(groundTruth, predicted, evaluatedLabel);
+        fscore = (1+Math.pow(beta, 2.0))*precision*recall/(Math.pow(beta, 2.0)*precision+recall);
     }
 
-    @Override
-    public Object getEvaluation() {
-        return this.fscore;
-    }
-
-    private double precision() {
+    private double precision(Map<UnaryForeignKeyCandidate, Instance.Result> groundTruth,
+                             Map<UnaryForeignKeyCandidate, Instance.Result> predicted,
+                             Instance.Result evaluatedLabel) {
         List<UnaryForeignKeyCandidate> predictedPositive = predicted.entrySet().stream()
                 .filter(unaryForeignKeyCandidateResultEntry -> unaryForeignKeyCandidateResultEntry.getValue()==evaluatedLabel)
                 .map(unaryForeignKeyCandidateResultEntry -> unaryForeignKeyCandidateResultEntry.getKey())
@@ -48,7 +46,9 @@ public class FMeasureEvaluation extends ClassifierEvaluation {
         return (double)truePositive / (double)predictedPositive.size();
     }
 
-    private double recall() {
+    private double recall(Map<UnaryForeignKeyCandidate, Instance.Result> groundTruth,
+                          Map<UnaryForeignKeyCandidate, Instance.Result> predicted,
+                          Instance.Result evaluatedLabel) {
         List<UnaryForeignKeyCandidate> actualPositive = groundTruth.entrySet().stream()
                 .filter(unaryForeignKeyCandidateResultEntry -> unaryForeignKeyCandidateResultEntry.getValue()==evaluatedLabel)
                 .map(unaryForeignKeyCandidateResultEntry -> unaryForeignKeyCandidateResultEntry.getKey())
@@ -60,15 +60,17 @@ public class FMeasureEvaluation extends ClassifierEvaluation {
         return (double)truePositive / (double)actualPositive.size();
     }
 
-    private void fscore(double beta) {
-        double precision = precision();
-        double recall = recall();
-        fscore = (1+Math.pow(beta, 2.0))*precision*recall/(Math.pow(beta, 2.0)*precision+recall);
+    public double getFscore() {
+        return fscore;
     }
 
-    private boolean checkIndentity() {
-        if (groundTruth.size()!=predicted.size()) return false;
+    @Override
+    public String getMetricName() {
+        return this.getClass().getSimpleName();
+    }
 
-        return groundTruth.keySet().stream().allMatch(unaryForeignKeyCandidate -> predicted.keySet().contains(unaryForeignKeyCandidate));
+    @Override
+    public double getResult() {
+        return getFscore();
     }
 }

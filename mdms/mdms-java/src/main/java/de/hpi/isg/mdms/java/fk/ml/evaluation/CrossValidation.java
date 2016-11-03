@@ -5,6 +5,7 @@ import de.hpi.isg.mdms.java.fk.Instance;
 import de.hpi.isg.mdms.java.fk.UnaryForeignKeyCandidate;
 import de.hpi.isg.mdms.java.fk.ml.classifier.AbstractClassifier;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,10 +21,9 @@ public class CrossValidation {
 
     private List<Dataset> partialDatasets;
 
-    /**
-     * The f measure score of the classifier on this dataset with cross validation.
-     */
-    private double fscore = 0.0;
+    private List<Metric> metrics = new ArrayList<>();
+
+    private ClassifierEvaluation evaluation;
 
     /**
      * Number of folds in this cross validation. The default value is 10.
@@ -41,8 +41,9 @@ public class CrossValidation {
         this.numFolds = numFolds;
     }
 
-    private void execute() {
-        ClassifierEvaluation evaluation = new FMeasureEvaluation(Instance.Result.FOREIGN_KEY);
+    public void execute() {
+        evaluation = new ClassifierEvaluation(Instance.Result.FOREIGN_KEY);
+        evaluation.addMetric(new FMeasure());
         seperateDataset();
 
         for (int i = 0; i< numFolds; i++) {
@@ -68,15 +69,13 @@ public class CrossValidation {
                     .forEach(instance -> predicted.putIfAbsent(instance.getForeignKeyCandidate(), instance.getIsForeignKey()));
             evaluation.setPredicted(predicted);
             evaluation.evaluate();
-            fscore += (double) evaluation.getEvaluation();
         }
-        fscore /= numFolds;
     }
 
     private void seperateDataset() {
         long numInstance = dataset.getNumOfInstance();
         int partialDatasetSize = (int) (numInstance / numFolds);
-//        int reminder = (int) (numInstance % numFolds);
+        partialDatasets = new ArrayList<>();
         for (int i = 0; i<numFolds; i++) {
             List<Instance> partialInstances = null;
             if (i!=numFolds-1) {
@@ -87,5 +86,9 @@ public class CrossValidation {
             Dataset partialDataset = new Dataset(partialInstances, dataset.getFeatures());
             partialDatasets.add(partialDataset);
         }
+    }
+
+    public ClassifierEvaluation getEvaluation() {
+        return evaluation;
     }
 }
