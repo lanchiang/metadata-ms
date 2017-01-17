@@ -1,5 +1,6 @@
 package de.hpi.isg.mdms.java.fk;
 
+import de.hpi.isg.mdms.java.fk.feature.Feature;
 import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
 
 import java.util.Map;
@@ -14,7 +15,7 @@ public class Instance {
     /**
      * Used to decide whether a IND feature vector is a foreign key.
      */
-    private Result isForeignKey;
+    private Result label;
 
     /**
      * Represents the feature vector of a instance.
@@ -27,7 +28,7 @@ public class Instance {
     private UnaryForeignKeyCandidate fkCandidate;
 
     public Instance(UnaryForeignKeyCandidate fkCandidate) {
-        this.isForeignKey = Result.UNKNOWN;
+        this.label = Result.UNKNOWN;
         this.featureVector = new Object2ObjectArrayMap<>();
         this.fkCandidate = fkCandidate;
     }
@@ -40,12 +41,16 @@ public class Instance {
         return fkCandidate;
     }
 
-    public Result getIsForeignKey() {
-        return isForeignKey;
+    public Result getLabel() {
+        return label;
     }
 
-    public void setIsForeignKey(Result isForeignKey) {
-        this.isForeignKey = isForeignKey;
+    public void setLabel(Result label) {
+        this.label = label;
+    }
+
+    public Object getValueByFeature(Feature feature) {
+        return featureVector.get(feature.getFeatureName());
     }
 
     /**
@@ -73,13 +78,13 @@ public class Instance {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Instance instance = (Instance) o;
-        return isForeignKey == instance.isForeignKey &&
+        return label == instance.label &&
                 Objects.equals(featureVector, instance.featureVector) &&
                 Objects.equals(fkCandidate, instance.fkCandidate);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(isForeignKey, featureVector, fkCandidate);
+        return Objects.hash(label, featureVector, fkCandidate);
     }
 }

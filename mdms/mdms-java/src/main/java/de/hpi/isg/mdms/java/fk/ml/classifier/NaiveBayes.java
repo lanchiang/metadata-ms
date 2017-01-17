@@ -2,14 +2,10 @@ package de.hpi.isg.mdms.java.fk.ml.classifier;
 
 import de.hpi.isg.mdms.java.fk.Dataset;
 import de.hpi.isg.mdms.java.fk.Instance;
-import de.hpi.isg.mdms.java.fk.UnaryForeignKeyCandidate;
 import de.hpi.isg.mdms.java.fk.feature.Feature;
-import it.unimi.dsi.fastutil.Hash;
 
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * A concrete Naive Bayes classifier.
@@ -95,7 +91,7 @@ public class NaiveBayes extends AbstractClassifier {
     @Override
     public void train() {
         instancesByClasses = trainingset.getDataset().stream()
-                .collect(Collectors.groupingBy(Instance::getIsForeignKey));
+                .collect(Collectors.groupingBy(Instance::getLabel));
         calcultePriorProbability();
         calculateLikelyhoods();
     }
@@ -122,8 +118,18 @@ public class NaiveBayes extends AbstractClassifier {
                     maxResult = label;
                 }
             }
-            instance.setIsForeignKey(maxResult);
+            instance.setLabel(maxResult);
         });
+    }
+
+    @Override
+    public void buildClassifier(Dataset dataset) {
+
+    }
+
+    @Override
+    public void classifyInstance(Instance instance) {
+
     }
 
     public Map<Instance.Result, Double> getPriorProbability() {

@@ -55,7 +55,7 @@ public class Dataset {
     public void buildDatasetStatistics() {
         numOfInstance = dataset.stream().count();
 
-        Map<Instance.Result, List<Instance>> instanceByClasses = dataset.stream().collect(Collectors.groupingBy(Instance::getIsForeignKey));
+        Map<Instance.Result, List<Instance>> instanceByClasses = dataset.stream().collect(Collectors.groupingBy(Instance::getLabel));
         numOfClasses = instanceByClasses.entrySet().stream().count();
     }
 
@@ -74,5 +74,37 @@ public class Dataset {
         dataset.removeAll(testset.dataset);
         buildDatasetStatistics();
         buildFeatureValueDistribution();
+    }
+
+    public Map<Instance.Result, Integer> getInstanceCountByClasses() {
+        Map<Instance.Result, Integer> instanceCountByClasses = new HashMap<>();
+        Map<Instance.Result, List<Instance>> instanceByClasses = dataset.stream().collect(Collectors.groupingBy(Instance::getLabel));
+        instanceByClasses.forEach((result, instances) -> instanceCountByClasses.put(result, instances.size()));
+        return instanceCountByClasses;
+    }
+
+    /**
+     * All the instances contain the same values on all the features.
+     * @return
+     */
+    public boolean isSelfIndentity() {
+        long distinctValueVector = dataset.stream().map(instance -> instance.getFeatureVector()).distinct().count();
+        if (distinctValueVector==1) {
+            return true;
+        }
+        else return false;
+    }
+
+    public Instance.Result findMajority() {
+        Map<Instance.Result, Integer> instanceCountByClasses = getInstanceCountByClasses();
+        Instance.Result maxResult = null;
+        int maxCount = 0;
+        for (Instance.Result result : instanceCountByClasses.keySet()) {
+            if (instanceCountByClasses.get(result)>maxCount) {
+                maxCount = instanceCountByClasses.get(result);
+                maxResult = result;
+            }
+        }
+        return maxResult;
     }
 }

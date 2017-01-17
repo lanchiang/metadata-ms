@@ -73,19 +73,19 @@ public class NaiveBayesClassifierTest {
 
         List<Instance> instances = new ArrayList<>();
         Instance instance = new Instance(new UnaryForeignKeyCandidate(column10.getId(), column20.getId()));
-        instance.setIsForeignKey(Instance.Result.FOREIGN_KEY);
+        instance.setLabel(Instance.Result.FOREIGN_KEY);
         instances.add(instance);
         instance = new Instance(new UnaryForeignKeyCandidate(column12.getId(), column30.getId()));
-        instance.setIsForeignKey(Instance.Result.FOREIGN_KEY);
+        instance.setLabel(Instance.Result.FOREIGN_KEY);
         instances.add(instance);
         instance = new Instance(new UnaryForeignKeyCandidate(column21.getId(), column11.getId()));
-        instance.setIsForeignKey(Instance.Result.NO_FOREIGN_KEY);
+        instance.setLabel(Instance.Result.NO_FOREIGN_KEY);
         instances.add(instance);
         instance = new Instance(new UnaryForeignKeyCandidate(column21.getId(), column31.getId()));
-        instance.setIsForeignKey(Instance.Result.FOREIGN_KEY);
+        instance.setLabel(Instance.Result.FOREIGN_KEY);
         instances.add(instance);
         instance = new Instance(new UnaryForeignKeyCandidate(column12.getId(), column31.getId()));
-        instance.setIsForeignKey(Instance.Result.NO_FOREIGN_KEY);
+        instance.setLabel(Instance.Result.NO_FOREIGN_KEY);
         instances.add(instance);
 
         List<Feature> features = new ArrayList<>();
@@ -102,10 +102,10 @@ public class NaiveBayesClassifierTest {
         // for test set
         instances = new ArrayList<>();
         instance = new Instance(new UnaryForeignKeyCandidate(column20.getId(), column12.getId()));
-        instance.setIsForeignKey(Instance.Result.UNKNOWN);
+        instance.setLabel(Instance.Result.UNKNOWN);
         instances.add(instance);
         instance = new Instance(new UnaryForeignKeyCandidate(column10.getId(), column31.getId()));
-        instance.setIsForeignKey(Instance.Result.UNKNOWN);
+        instance.setLabel(Instance.Result.UNKNOWN);
         instances.add(instance);
 
         testSet = new Dataset(instances, features);
@@ -185,7 +185,7 @@ public class NaiveBayesClassifierTest {
         classifier.setTestset(testSet);
         classifier.predict();
         List<Instance> predicted = classifier.getTestset().getDataset();
-        assertTrue(predicted.get(0).getIsForeignKey().equals(Instance.Result.NO_FOREIGN_KEY));
-        assertTrue(predicted.get(1).getIsForeignKey().equals(Instance.Result.FOREIGN_KEY));
+        assertTrue(predicted.get(0).getLabel().equals(Instance.Result.NO_FOREIGN_KEY));
+        assertTrue(predicted.get(1).getLabel().equals(Instance.Result.FOREIGN_KEY));
     }
 }

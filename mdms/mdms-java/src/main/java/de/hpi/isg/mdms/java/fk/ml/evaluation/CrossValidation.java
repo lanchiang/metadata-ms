@@ -53,7 +53,7 @@ public class CrossValidation {
             classifier.setTestset(testset);
             Map<UnaryForeignKeyCandidate, Instance.Result> groundTruth = new HashMap<>();
             testset.getDataset().stream()
-                    .forEach(instance -> groundTruth.putIfAbsent(instance.getForeignKeyCandidate(), instance.getIsForeignKey()));
+                    .forEach(instance -> groundTruth.putIfAbsent(instance.getForeignKeyCandidate(), instance.getLabel()));
             evaluation.setGroundTruth(groundTruth);
 
             dataset.removeTestset(testset);
@@ -66,7 +66,7 @@ public class CrossValidation {
             classifier.predict();
             Map<UnaryForeignKeyCandidate, Instance.Result> predicted = new HashMap<>();
             classifier.getTestset().getDataset().stream()
-                    .forEach(instance -> predicted.putIfAbsent(instance.getForeignKeyCandidate(), instance.getIsForeignKey()));
+                    .forEach(instance -> predicted.putIfAbsent(instance.getForeignKeyCandidate(), instance.getLabel()));
             evaluation.setPredicted(predicted);
             evaluation.evaluate();
         }
