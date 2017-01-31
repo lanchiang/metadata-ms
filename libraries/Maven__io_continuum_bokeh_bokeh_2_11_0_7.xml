@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: io.continuum.bokeh:bokeh_2.11:0.7">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/io/continuum/bokeh/bokeh_2.11/0.7/bokeh_2.11-0.7.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/io/continuum/bokeh/bokeh_2.11/0.7/bokeh_2.11-0.7-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/io/continuum/bokeh/bokeh_2.11/0.7/bokeh_2.11-0.7-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

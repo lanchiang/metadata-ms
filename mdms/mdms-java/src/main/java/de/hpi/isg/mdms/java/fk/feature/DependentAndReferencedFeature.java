@@ -11,13 +11,14 @@ import java.util.Collection;
 /**
  * Created by jianghm on 2016/10/18.
  */
-public class DependentAndReferencedFeature extends Feature {
+public class DependentAndReferencedFeature extends Feature implements FeatureUpdate{
 
-    private final static String DEPENDENT_AND_REFERENCED_FEATURE_NAME = "DependentAndReferenced";
+    private final static String DEPENDENT_AND_REFERENCED_FEATURE_NAME = "dependent_and_referenced";
 
     @Override
     public void calcualteFeatureValue(Collection<Instance> instanceCollection) {
         featureName = DEPENDENT_AND_REFERENCED_FEATURE_NAME;
+        featureType = FeatureType.Numeric;
 
         // Count the number of references for the columns.
         Int2IntOpenHashMap columnNumReferences = new Int2IntOpenHashMap();
@@ -28,7 +29,6 @@ public class DependentAndReferencedFeature extends Feature {
             columnNumReferences.addTo(refColumn, 1);
         }
 
-        // Do the actual classification.
         for (Instance instance : instanceCollection) {
             final UnaryForeignKeyCandidate fkc = instance.getForeignKeyCandidate();
             final int depColumn = fkc.getDependentColumnId();

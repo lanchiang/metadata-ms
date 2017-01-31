@@ -11,15 +11,16 @@ import java.util.Collection;
 /**
  * Created by jianghm on 2016/10/18.
  */
-public class MultiDependentFeature extends Feature{
+public class MultiDependentFeature extends Feature implements FeatureUpdate{
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+//    private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final static String MULTI_DEPENDENT_FEATURE_NAME = "MultiDependent";
+    private final static String MULTI_DEPENDENT_FEATURE_NAME = "multi_dependent";
 
     @Override
     public void calcualteFeatureValue(Collection<Instance> instanceCollection) {
         featureName = MULTI_DEPENDENT_FEATURE_NAME;
+        featureType = FeatureType.Numeric;
 
         // Count the number of references for the columns.
         Int2IntOpenHashMap columnNumDependentOccurrences = new Int2IntOpenHashMap();

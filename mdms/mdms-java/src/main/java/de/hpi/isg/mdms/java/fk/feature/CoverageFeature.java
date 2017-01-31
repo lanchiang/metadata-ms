@@ -16,15 +16,20 @@ import java.util.Map;
  */
 public class CoverageFeature extends Feature {
 
-    private final static String COVERAGE_FEATURE_NAME = "Coverage";
+    private final static String COVERAGE_FEATURE_NAME = "coverage";
 
     /**
      * Stores the distinct value counts for all columns.
      */
     private final Int2LongMap distinctValues;
 
+    public CoverageFeature() {
+        distinctValues = new Int2LongOpenHashMap();
+    }
+
     public CoverageFeature(ConstraintCollection columnStatsConstraintCollection) {
         featureName = COVERAGE_FEATURE_NAME;
+        featureType = FeatureType.Numeric;
 
         // Initialize the distinct value counts.
         this.distinctValues = new Int2LongOpenHashMap((int) columnStatsConstraintCollection.getConstraints().stream()
@@ -46,6 +51,10 @@ public class CoverageFeature extends Feature {
 
             double depDistinctValueCount = this.distinctValues.get(depColumnId);
             double refDistinctValueCount = this.distinctValues.get(refColumnId);
+            // for smooth
+            if (refDistinctValueCount==0) {
+                refDistinctValueCount = 1;
+            }
 
             double coverage = depDistinctValueCount/refDistinctValueCount;
             instance.getFeatureVector().put(featureName, coverage);

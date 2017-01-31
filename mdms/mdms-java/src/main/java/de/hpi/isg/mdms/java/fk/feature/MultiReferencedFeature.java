@@ -9,13 +9,14 @@ import java.util.Collection;
 /**
  * Created by jianghm on 2016/10/18.
  */
-public class MultiReferencedFeature extends Feature {
+public class MultiReferencedFeature extends Feature implements FeatureUpdate{
 
-    private final static String MULTI_REFERENCED_FEATURE_NAME = "MultiReferenced";
+    private final static String MULTI_REFERENCED_FEATURE_NAME = "multi_referenced";
 
     @Override
     public void calcualteFeatureValue(Collection<Instance> instanceCollection) {
         featureName = MULTI_REFERENCED_FEATURE_NAME;
+        featureType = FeatureType.Numeric;
 
         // Count the number of references for the columns.
         Int2IntOpenHashMap columnNumReferences = new Int2IntOpenHashMap();

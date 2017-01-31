@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: de.metanome:backend:0.0.2-SNAPSHOT">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/de/metanome/backend/0.0.2-SNAPSHOT/backend-0.0.2-20160120.104832-294.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/de/metanome/backend/0.0.2-SNAPSHOT/backend-0.0.2-20160120.104832-294-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/de/metanome/backend/0.0.2-SNAPSHOT/backend-0.0.2-20160120.104832-294-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

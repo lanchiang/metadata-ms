@@ -1,0 +1,17 @@
+@relation dataset
+
+@attribute coverage numeric
+@attribute distinct_dependent_value numeric
+@attribute foreignKey {FOREIGN_KEY,UNKNOWN,NO_FOREIGN_KEY}
+
+@data
+0.7,16.0,FOREIGN_KEY
+0.64,5.0,NO_FOREIGN_KEY
+0.82,13.0,FOREIGN_KEY
+0.34,9.0,NO_FOREIGN_KEY
+0.59,12.0,FOREIGN_KEY
+0.13,4.0,NO_FOREIGN_KEY
+0.66,25.0,FOREIGN_KEY
+0.24,10.0,NO_FOREIGN_KEY
+0.57,23.0,NO_FOREIGN_KEY
+0.32,19.0,FOREIGN_KEY

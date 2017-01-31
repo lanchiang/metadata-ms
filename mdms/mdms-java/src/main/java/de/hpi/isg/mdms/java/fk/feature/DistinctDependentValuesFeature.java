@@ -12,17 +12,22 @@ import java.util.Collection;
 /**
  * Created by jianghm on 2016/10/18.
  */
-public class DistinctDependentValuesFeature extends Feature {
+public class DistinctDependentValuesFeature extends Feature implements FeatureUpdate{
 
-    private final static String DISTINCT_DEPENDENT_VALUES_FEATURE_NAME = "DistinctDependentValues";
+    private final static String DISTINCT_DEPENDENT_VALUES_FEATURE_NAME = "distinct_dependent_values";
 
     /**
      * Stores the distinct value counts for all columns.
      */
     private final Int2LongMap distinctValues;
 
+    public DistinctDependentValuesFeature() {
+        distinctValues = new Int2LongOpenHashMap();
+    }
+
     public DistinctDependentValuesFeature(ConstraintCollection columnStatsConstraintCollection) {
         featureName = DISTINCT_DEPENDENT_VALUES_FEATURE_NAME;
+        featureType = FeatureType.Numeric;
 
         // Initialize the distinct value counts.
         this.distinctValues = new Int2LongOpenHashMap((int) columnStatsConstraintCollection.getConstraints().stream()

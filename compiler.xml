@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <resourceExtensions />
+    <wildcardResourcePatterns>
+      <entry name="!?*.java" />
+      <entry name="!?*.form" />
+      <entry name="!?*.class" />
+      <entry name="!?*.groovy" />
+      <entry name="!?*.scala" />
+      <entry name="!?*.flex" />
+      <entry name="!?*.kt" />
+      <entry name="!?*.clj" />
+      <entry name="!?*.aj" />
+    </wildcardResourcePatterns>
+    <annotationProcessing>
+      <profile default="true" name="Default" enabled="false">
+        <processorPath useClasspath="true" />
+      </profile>
+      <profile default="false" name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="true" />
+        <module name="mdms-analytics" />
+        <module name="mdms-cassandra" />
+        <module name="mdms-cli" />
+        <module name="mdms-clients" />
+        <module name="mdms-dependencies" />
+        <module name="mdms-distro" />
+        <module name="mdms-flink" />
+        <module name="mdms-java" />
+        <module name="mdms-model" />
+        <module name="mdms-rdbms" />
+        <module name="mdms-simple" />
+        <module name="mdms-sqlite" />
+        <module name="mdms-tools" />
+        <module name="mdms-util" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="mdms" target="1.8" />
+      <module name="mdms-analytics" target="1.8" />
+      <module name="mdms-cassandra" target="1.8" />
+      <module name="mdms-cli" target="1.8" />
+      <module name="mdms-clients" target="1.8" />
+      <module name="mdms-dependencies" target="1.8" />
+      <module name="mdms-distro" target="1.8" />
+      <module name="mdms-flink" target="1.8" />
+      <module name="mdms-java" target="1.8" />
+      <module name="mdms-model" target="1.8" />
+      <module name="mdms-rdbms" target="1.8" />
+      <module name="mdms-simple" target="1.8" />
+      <module name="mdms-sqlite" target="1.8" />
+      <module name="mdms-tools" target="1.8" />
+      <module name="mdms-util" target="1.8" />
+    </bytecodeTargetLevel>
+  </component>
+</project>

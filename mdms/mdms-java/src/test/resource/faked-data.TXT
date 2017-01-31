@@ -1,0 +1,11 @@
+coverage,distinct_dependent_value,class
+0.7,16,yes
+0.64,5,no
+0.82,13,yes
+0.34,9,no
+0.59,12,yes
+0.13,4,no
+0.66,25,yes
+0.24,10,no
+0.57,23,no
+0.32,19,yes

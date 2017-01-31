@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/mdms/mdms.iml" filepath="$PROJECT_DIR$/mdms/mdms.iml" />
+      <module fileurl="file://$PROJECT_DIR$/mdms/mdms-analytics/mdms-analytics.iml" filepath="$PROJECT_DIR$/mdms/mdms-analytics/mdms-analytics.iml" />
+      <module fileurl="file://$PROJECT_DIR$/mdms/mdms-cassandra/mdms-cassandra.iml" filepath="$PROJECT_DIR$/mdms/mdms-cassandra/mdms-cassandra.iml" />
+      <module fileurl="file://$PROJECT_DIR$/mdms/mdms-cli/mdms-cli.iml" filepath="$PROJECT_DIR$/mdms/mdms-cli/mdms-cli.iml" />
+      <module fileurl="file://$PROJECT_DIR$/mdms/mdms-clients/mdms-clients.iml" filepath="$PROJECT_DIR$/mdms/mdms-clients/mdms-clients.iml" />
+      <module fileurl="file://$PROJECT_DIR$/mdms/mdms-dependencies/mdms-dependencies.iml" filepath="$PROJECT_DIR$/mdms/mdms-dependencies/mdms-dependencies.iml" />
+      <module fileurl="file://$PROJECT_DIR$/mdms/mdms-distro/mdms-distro.iml" filepath="$PROJECT_DIR$/mdms/mdms-distro/mdms-distro.iml" />
+      <module fileurl="file://$PROJECT_DIR$/mdms/mdms-flink/mdms-flink.iml" filepath="$PROJECT_DIR$/mdms/mdms-flink/mdms-flink.iml" />
+      <module fileurl="file://$PROJECT_DIR$/mdms/mdms-java/mdms-java.iml" filepath="$PROJECT_DIR$/mdms/mdms-java/mdms-java.iml" />
+      <module fileurl="file://$PROJECT_DIR$/mdms/mdms-model/mdms-model.iml" filepath="$PROJECT_DIR$/mdms/mdms-model/mdms-model.iml" />
+      <module fileurl="file://$PROJECT_DIR$/mdms/mdms-rdbms/mdms-rdbms.iml" filepath="$PROJECT_DIR$/mdms/mdms-rdbms/mdms-rdbms.iml" />
+      <module fileurl="file://$PROJECT_DIR$/mdms/mdms-simple/mdms-simple.iml" filepath="$PROJECT_DIR$/mdms/mdms-simple/mdms-simple.iml" />
+      <module fileurl="file://$PROJECT_DIR$/mdms/mdms-sqlite/mdms-sqlite.iml" filepath="$PROJECT_DIR$/mdms/mdms-sqlite/mdms-sqlite.iml" />
+      <module fileurl="file://$PROJECT_DIR$/mdms/mdms-tools/mdms-tools.iml" filepath="$PROJECT_DIR$/mdms/mdms-tools/mdms-tools.iml" />
+      <module fileurl="file://$PROJECT_DIR$/mdms/mdms-util/mdms-util.iml" filepath="$PROJECT_DIR$/mdms/mdms-util/mdms-util.iml" />
+    </modules>
+  </component>
+</project>

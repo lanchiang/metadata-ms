@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: de.metanome:test_helper:0.0.2-SNAPSHOT">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/de/metanome/test_helper/0.0.2-SNAPSHOT/test_helper-0.0.2-20160120.104617-295.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/de/metanome/test_helper/0.0.2-SNAPSHOT/test_helper-0.0.2-20160120.104617-295-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/de/metanome/test_helper/0.0.2-SNAPSHOT/test_helper-0.0.2-20160120.104617-295-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

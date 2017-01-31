@@ -129,6 +129,5 @@ public class MetanomeDependencyImportApp extends MdmsAppTemplate<MetanomeDepende
                     throw new IllegalArgumentException("Unknown dependency type: " + this.dependencyType);
             }
         }
-
     }
 }

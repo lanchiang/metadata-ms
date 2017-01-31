@@ -9,31 +9,36 @@ import java.util.Collection;
  * Super class for various feature classes.
  * @author Lan Jiang
  */
-abstract public class Feature implements FeatureUpdate {
+abstract public class Feature implements FeatureUpdate{
 
     protected String featureName;
 
     /**
      * Indicate whether the feature is numeric or nominal.
      */
-    protected String featureType;
+    protected FeatureType featureType;
 
-    /**
-     * Indicate the count of distinct value.
-     */
-    protected long distinctCount;
+    public enum FeatureType {
+        Nominal,
 
-    /**
-     * Indicate the unique value count in this dataset.
-     */
-    protected long uniqueCount;
+        Numeric,
 
-    /**
-     * Indicate the missing value count.
-     */
-    protected long missingCount;
+        String;
+    }
 
     public String getFeatureName() {
         return featureName;
+    }
+
+    public FeatureType getFeatureType() {
+        return featureType;
+    }
+
+    public void setFeatureName(String featureName) {
+        this.featureName = featureName;
+    }
+
+    public void setFeatureType(FeatureType featureType) {
+        this.featureType = featureType;
     }
 }

@@ -10,28 +10,29 @@ import de.hpi.isg.mdms.domain.constraints.ColumnStatistics;
 import de.hpi.isg.mdms.domain.constraints.InclusionDependency;
 import de.hpi.isg.mdms.domain.constraints.TupleCount;
 import de.hpi.isg.mdms.domain.constraints.UniqueColumnCombination;
-import de.hpi.isg.mdms.domain.util.DependencyPrettyPrinter;
 import de.hpi.isg.mdms.domain.util.SQLiteConstraintUtils;
-import de.hpi.isg.mdms.java.fk.ClassificationSet;
+import de.hpi.isg.mdms.java.DecisionTableW;
+import de.hpi.isg.mdms.java.J48W;
+import de.hpi.isg.mdms.java.NaiveBayesW;
+import de.hpi.isg.mdms.java.SVMW;
 import de.hpi.isg.mdms.java.fk.Dataset;
 import de.hpi.isg.mdms.java.fk.Instance;
 import de.hpi.isg.mdms.java.fk.UnaryForeignKeyCandidate;
-import de.hpi.isg.mdms.java.fk.classifiers.*;
 import de.hpi.isg.mdms.java.fk.feature.*;
-import de.hpi.isg.mdms.java.fk.ml.classifier.AbstractClassifier;
-import de.hpi.isg.mdms.java.fk.ml.classifier.NaiveBayes;
-import de.hpi.isg.mdms.java.fk.ml.evaluation.ClassifierEvaluation;
-import de.hpi.isg.mdms.java.fk.ml.evaluation.FMeasureEvaluation;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
-import de.hpi.isg.mdms.model.targets.Target;
+import de.hpi.isg.mdms.model.targets.Table;
 import de.hpi.isg.mdms.model.util.IdUtils;
 import de.hpi.isg.mdms.rdbms.SQLiteInterface;
+import de.hpi.isg.mdms.tools.metanome.ResultMetadataStoreWriter;
 import it.unimi.dsi.fastutil.ints.*;
-import it.unimi.dsi.fastutil.objects.Object2IntMap;
-import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.*;
-import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -42,8 +43,6 @@ import java.util.stream.Stream;
  * the classified foreign keys.
  */
 public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.Parameters> {
-
-    private final List<PartialForeignKeyClassifier> partialClassifiers = new LinkedList<>();
 
     private List<Feature> features = new ArrayList<>();
 
@@ -67,7 +66,12 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
 
     @Override
     protected void executeAppLogic() throws Exception {
+
+//        Set<UnaryForeignKeyCandidate> fkSet = readFkFromFile();
+
         // Load all relevant constraint collections.
+        getLogger().info("Loading FKs...");
+        final ConstraintCollection fkCollection = this.metadataStore.getConstraintCollection(this.parameters.fkCollectionId);
         getLogger().info("Loading INDs...");
         final ConstraintCollection indCollection = this.metadataStore.getConstraintCollection(this.parameters.indCollectionId);
         getLogger().info("Loading DVCs...");
@@ -128,16 +132,18 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
                 .collect(Collectors.toList());
         getLogger().info("Detected {} relevant INDs from {} INDs overall.", relevantInds.size(), indCollection.getConstraints().size());
 
-        // Create classification sets for the remaining INDs.
-        getLogger().info("Creating and running the partial classifiers...");
-        final Map<UnaryForeignKeyCandidate, ClassificationSet> fkCandidateClassificationSet = relevantInds.stream()
-                .flatMap(this::splitIntoUnaryForeignKeyCandidates)
-                .distinct()
-                .map(ClassificationSet::new)
-                .collect(Collectors.toMap(
-                        ClassificationSet::getForeignKeyCandidate,
-                        Function.identity()
-                ));
+        final Set<UnaryForeignKeyCandidate> fkSet = fkCollection.getConstraints().stream()
+                .map(constraint -> (InclusionDependency)constraint)
+                .filter(ind -> {
+                    int depCount = ind.getTargetReference().getDependentColumns().length;
+                    return depCount==1?true:false;
+                })
+                .map(ind -> {
+                    int[] dep = ind.getTargetReference().getDependentColumns();
+                    int[] ref = ind.getTargetReference().getReferencedColumns();
+                    return new UnaryForeignKeyCandidate(dep[0],ref[0]);
+                })
+                .collect(Collectors.toSet());
 
         List<Instance> instances = relevantInds.stream()
                 .flatMap(this::splitIntoUnaryForeignKeyCandidates)
@@ -152,130 +158,20 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
         this.features.add(new MultiReferencedFeature());
 
         Dataset dataset = new Dataset(instances, features);
-        dataset.buildDatasetStatistics();
         dataset.buildFeatureValueDistribution();
+        dataset.labelDataset(fkSet);
 
-        AbstractClassifier classifier = new NaiveBayes();
-        classifier.setTrainingset(dataset);
-        classifier.setTestset(dataset);
-        classifier.train();
-        classifier.predict();
+        NaiveBayesW naiveBayesW = new NaiveBayesW(dataset);
+        naiveBayesW.buildClassifier();
 
-        // Calculate the score for all the inclusion dependencies.
-        final List<InclusionDependencyRating> indRatings = relevantInds.stream()
-                .map(ind -> {
-                    double indScore = splitIntoUnaryForeignKeyCandidates(ind)
-                            .map(fkCandidateClassificationSet::get)
-                            .mapToDouble(ClassificationSet::getOverallScore)
-                            .average().orElse(0d);
-                    final Map<UnaryForeignKeyCandidate, List<ClassificationSet>> reasoning =
-                            splitIntoUnaryForeignKeyCandidates(ind)
-                                    .map(fkCandidateClassificationSet::get)
-                                    .collect(Collectors.groupingBy(ClassificationSet::getForeignKeyCandidate));
-                    return new InclusionDependencyRating(ind, indScore, reasoning);
-                })
-                .filter(rating -> rating.score >= this.parameters.minFkScore)
-                .sorted((rating1, rating2) -> Double.compare(rating2.score, rating1.score))
-                .collect(Collectors.toList());
+        J48W j48W = new J48W(dataset);
+        j48W.buildClassifier();
 
-        // Greedily pick the best INDs and check consistency with already picked INDs.
-        getLogger().info("Picking the best INDs as FKs...");
-        Int2ObjectMap<IntSet> tablePrimaryKeys = new Int2ObjectOpenHashMap<>();
-        IntSet usedDependentColumns = new IntOpenHashSet();
+        SVMW svmw = new SVMW(dataset);
+        svmw.buildClassifier();
 
-        final List<InclusionDependencyRating> foreignKeyRatings = indRatings.stream()
-                .filter(indRating -> {
-                    // Check that none of the dependent attributes is part of an already picked IND.
-                    if (Arrays.stream(indRating.ind.getTargetReference().getDependentColumns())
-                            .anyMatch(usedDependentColumns::contains)) return false;
-
-                    // The referenced attributes imply a primary key: Check that no other foreign key has been picked.
-                    final int tableId = idUtils.getTableId(indRating.ind.getTargetReference().getReferencedColumns()[0]);
-                    final IntSet refTablePK = tablePrimaryKeys.get(tableId);
-                    if (refTablePK != null &&
-                            (refTablePK.size() != indRating.ind.getArity() ||
-                                    !Arrays.stream(indRating.ind.getTargetReference().getReferencedColumns())
-                                            .allMatch(refTablePK::contains))) {
-                        return false;
-                    }
-
-                    // It's settled: we accept the IND. Update the PKs and used dependent attributes accordingly.
-                    Arrays.stream(indRating.ind.getTargetReference().getDependentColumns())
-                            .forEach(usedDependentColumns::add);
-                    if (refTablePK == null) {
-                        tablePrimaryKeys.put(
-                                tableId,
-                                new IntOpenHashSet(indRating.ind.getTargetReference().getReferencedColumns()));
-                    }
-                    return true;
-                })
-                .collect(Collectors.toList());
-
-        if (this.parameters.isDryRun) {
-            DependencyPrettyPrinter prettyPrinter = new DependencyPrettyPrinter(this.metadataStore);
-            for (InclusionDependencyRating foreignKeyRating : foreignKeyRatings) {
-                System.out.format("Chosen FK %s with a rating of %.2f.\n",
-                        prettyPrinter.prettyPrint(foreignKeyRating.ind),
-                        foreignKeyRating.score);
-            }
-        } else {
-            final ConstraintCollection constraintCollection = this.metadataStore.createConstraintCollection(
-                    String.format("Foreign keys (%s)", new Date()),
-                    indCollection.getScope().toArray(new Target[indCollection.getScope().size()]));
-            foreignKeyRatings.stream()
-                    .map(fkRating -> fkRating.ind)
-                    .forEach(constraintCollection::add);
-            this.metadataStore.flush();
-        }
-
-        if (this.parameters.evaluationFiles.size() == 2) {
-            throw new RuntimeException("Not implemented: not settled upon a source for FK gold standards.");
-//            final String tableDefPath = this.parameters.evaluationFiles.get(0);
-//            final String fkDefPath = this.parameters.evaluationFiles.get(1);
-//            final Map<String, List<String>> tableDefinitions = MusicBrainzParser.readTableDefinitions(tableDefPath);
-//            final Object2IntMap<String> columnIdDictionary = MusicBrainzParser.createColumnIdDictionary(
-//                    this.metadataStore,
-//                    this.metadataStore.getSchemaByName(this.parameters.schemaName),
-//                    tableDefinitions);
-//            final Set<InclusionDependency> goldInds =
-//                    new HashSet<>(MusicBrainzParser.readGoldINDs(fkDefPath, columnIdDictionary));
-//
-//            if (this.parameters.isNeglectEmptyTables) {
-//                // Remove INDs that pertain to empty columns.
-//                final int numOriginalGoldInds = goldInds.size();
-//                goldInds.removeIf(ind -> {
-//                    final int depTableId = idUtils.getTableId(ind.getTargetReference().getDependentColumns()[0]);
-//                    final int refTableId = idUtils.getTableId(ind.getTargetReference().getReferencedColumns()[0]);
-//                    return !nonEmptyTableIds.contains(depTableId) || !nonEmptyTableIds.contains(refTableId);
-//                });
-//                getLogger().info("Reduced number of gold standard INDs from {} to {}.", numOriginalGoldInds, goldInds.size());
-//            }
-//
-//            int numTruePositives = 0;
-//            DependencyPrettyPrinter prettyPrinter = new DependencyPrettyPrinter(this.metadataStore);
-//            for (InclusionDependencyRating foreignKeyRating : foreignKeyRatings) {
-//                final InclusionDependency ind = foreignKeyRating.ind;
-//                if (goldInds.contains(ind)) {
-//                    System.out.format("Correct FK: %s (%s)\n",
-//                            prettyPrinter.prettyPrint(ind), foreignKeyRating.explain(prettyPrinter));
-//                    numTruePositives++;
-//                } else {
-//                    System.out.format("Wrong FK:   %s (%s)\n",
-//                            prettyPrinter.prettyPrint(ind), foreignKeyRating.explain(prettyPrinter));
-//                }
-//            }
-//
-//            System.out.format("Gold INDs:      %d\n", goldInds.size());
-//            System.out.format("Guessed INDs:   %d\n", foreignKeyRatings.size());
-//            System.out.format("True positives: %d\n", numTruePositives);
-//            System.out.format("Recall:         %.2f%%\n", numTruePositives * 100d / goldInds.size());
-//            System.out.format("Precision:      %.2f%%\n", numTruePositives * 100d / foreignKeyRatings.size());
-
-
-        }
-
-        this.metadataStore.close();
-
+        DecisionTableW decisionTableW = new DecisionTableW(dataset);
+        decisionTableW.buildClassifier();
     }
 
     /**
@@ -328,47 +224,61 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
         return false;
     }
 
-    /**
-     * This class amends and {@link InclusionDependency} with a score.
-     */
-    private static class InclusionDependencyRating {
-
-        private final InclusionDependency ind;
-
-        private final double score;
-
-        private final Map<UnaryForeignKeyCandidate, List<ClassificationSet>> reasoning;
-
-        public InclusionDependencyRating(InclusionDependency ind, double score,
-                                         Map<UnaryForeignKeyCandidate, List<ClassificationSet>> reasoning) {
-            this.ind = ind;
-            this.score = score;
-            this.reasoning = reasoning;
-        }
-
-        public String explain(DependencyPrettyPrinter prettyPrinter) {
-            StringBuilder sb = new StringBuilder();
-            sb.append("Rating: ").append(String.format("%.2f", this.score)).append(", because ");
-            String separator = "";
-            for (Map.Entry<UnaryForeignKeyCandidate, List<ClassificationSet>> entry : reasoning.entrySet()) {
-                final UnaryForeignKeyCandidate fkCandidate = entry.getKey();
-                InclusionDependency ind = new InclusionDependency(new InclusionDependency.Reference(
-                        new int[]{fkCandidate.getDependentColumnId()},
-                        new int[]{fkCandidate.getReferencedColumnId()}));
-                sb.append(separator).append(prettyPrinter.prettyPrint(ind)).append(": {");
-                separator = "";
-                for (ClassificationSet classificationSet : entry.getValue()) {
-                    for (PartialForeignKeyClassifier.WeightedResult weightedResult : classificationSet.getPartialResults()) {
-                        sb.append(separator).append(weightedResult);
-                        separator = ", ";
-                    }
-                    sb.append("}");
+    private Set<UnaryForeignKeyCandidate> readFkFromFile() {
+        Set<UnaryForeignKeyCandidate> fkcandidates = new HashSet<>();
+        try {
+            Pattern pattern = Pattern.compile("\\[([^\\[\\]]*)\\]");
+            BufferedReader bufferedReader = new BufferedReader(new FileReader(this.parameters.evaluationFile));
+            String line;
+            int count = 0;
+            while ((line=bufferedReader.readLine())!=null) {
+                String[] info = line.split(" c ");
+                Matcher matcher = pattern.matcher(info[0]);
+                String lhs = "";
+                while (matcher.find()) {
+                    lhs = matcher.group(1);
                 }
-                separator = ", ";
+                matcher = pattern.matcher(info[1]);
+                String rhs = "";
+                while (matcher.find()) {
+                    rhs = matcher.group(1);
+                }
+                int lhsId = getColId(lhs);
+                int rhsId = getColId(rhs);
+                if (lhsId!=-1&&rhsId!=-1) {
+                    fkcandidates.add(new UnaryForeignKeyCandidate(lhsId, rhsId));
+                }
+                System.out.println(count++);
             }
-
-            return sb.toString();
+            bufferedReader.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+//        } finally {
+//            return fkcandidates;
         }
+        return fkcandidates;
+    }
+
+    private int getColId(String line) {
+        String[] split = line.split("\\.");
+        String columnName = null;
+        String tableName = null;
+        columnName = ResultMetadataStoreWriter.convertMetanomeColumnIdentifier(split[split.length-1]);
+        if (split.length==2) {
+            tableName = split[0];
+        }
+        else {
+            tableName = String.join(",", split[0], split[1]);
+        }
+        Table table = this.metadataStore.getSchemaByName(this.parameters.schemaName)
+                .getTableByName(tableName);
+        if (table==null) {
+            return -1;
+        }
+        int columnId = table.getColumnByName(columnName).getId();
+        return columnId;
     }
 
     /**
@@ -385,6 +295,11 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
                 description = "ID of the constraint collection that contains the distinct value counts",
                 required = false)
         public int dvcCollectionId;
+
+        @Parameter(names = {"--fks"},
+                description = "ID of the constraint collection that contains the input FKs",
+                required = true)
+        public int fkCollectionId;
 
         @Parameter(names = {"--statistics"},
                 description = "ID of the constraint collection that contains single column statistics",
@@ -411,11 +326,16 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
                 required = false)
         public boolean isDryRun = false;
 
+//        @Parameter(names = "--evaluation-files",
+//                description = "table definition file and FK definition file",
+//                arity = 2,
+//                required = false)
+//        public List<String> evaluationFiles = new ArrayList<>(2);
+
         @Parameter(names = "--evaluation-files",
-                description = "table definition file and FK definition file",
-                arity = 2,
+                description = "name of the evaluation file",
                 required = false)
-        public List<String> evaluationFiles = new ArrayList<>(2);
+        public String evaluationFile = null;
 
         @Parameter(names = "--schema-name",
                 description = "schema name for evaluation purposes",

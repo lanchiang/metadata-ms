@@ -31,6 +31,8 @@ public class Dataset {
     public Dataset(List<Instance> dataset, List<Feature> features) {
         this.dataset = dataset;
         this.features = features;
+
+        buildDatasetStatistics();
     }
 
     public List<Instance> getDataset() {
@@ -70,9 +72,12 @@ public class Dataset {
         return result.orElse(null);
     }
 
-    public void removeTestset(Dataset testset) {
-        dataset.removeAll(testset.dataset);
-        buildDatasetStatistics();
-        buildFeatureValueDistribution();
+    public void labelDataset(Set<UnaryForeignKeyCandidate> foreignKeySet) {
+        for (Instance instance : dataset) {
+            if (foreignKeySet.contains(instance.getForeignKeyCandidate())) {
+                instance.setIsForeignKey(Instance.Result.FOREIGN_KEY);
+            }
+            else instance.setIsForeignKey(Instance.Result.NO_FOREIGN_KEY);
+        }
     }
 }
