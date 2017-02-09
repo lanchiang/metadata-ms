@@ -11,14 +11,15 @@ import de.hpi.isg.mdms.domain.constraints.InclusionDependency;
 import de.hpi.isg.mdms.domain.constraints.TupleCount;
 import de.hpi.isg.mdms.domain.constraints.UniqueColumnCombination;
 import de.hpi.isg.mdms.domain.util.SQLiteConstraintUtils;
-import de.hpi.isg.mdms.java.DecisionTableW;
-import de.hpi.isg.mdms.java.J48W;
-import de.hpi.isg.mdms.java.NaiveBayesW;
-import de.hpi.isg.mdms.java.SVMW;
-import de.hpi.isg.mdms.java.fk.Dataset;
-import de.hpi.isg.mdms.java.fk.Instance;
-import de.hpi.isg.mdms.java.fk.UnaryForeignKeyCandidate;
-import de.hpi.isg.mdms.java.fk.feature.*;
+import de.hpi.isg.mdms.java.classifier.DecisionTableW;
+import de.hpi.isg.mdms.java.classifier.J48W;
+import de.hpi.isg.mdms.java.classifier.NaiveBayesW;
+import de.hpi.isg.mdms.java.classifier.SVMW;
+import de.hpi.isg.mdms.java.sampling.NonrandomUnderSampling;
+import de.hpi.isg.mdms.java.util.Dataset;
+import de.hpi.isg.mdms.java.util.Instance;
+import de.hpi.isg.mdms.java.util.UnaryForeignKeyCandidate;
+import de.hpi.isg.mdms.java.feature.*;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.targets.Table;
 import de.hpi.isg.mdms.model.util.IdUtils;
@@ -26,13 +27,7 @@ import de.hpi.isg.mdms.rdbms.SQLiteInterface;
 import de.hpi.isg.mdms.tools.metanome.ResultMetadataStoreWriter;
 import it.unimi.dsi.fastutil.ints.*;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -144,6 +139,7 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
                     return new UnaryForeignKeyCandidate(dep[0],ref[0]);
                 })
                 .collect(Collectors.toSet());
+        getLogger().info("Detect {} FKs overall.", fkSet.size());
 
         List<Instance> instances = relevantInds.stream()
                 .flatMap(this::splitIntoUnaryForeignKeyCandidates)
@@ -151,27 +147,69 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
                 .map(Instance::new)
                 .collect(Collectors.toList());
 
+        // under sampling
+//        Map<Instance.Result, List<Instance>> splitBylabel = splitByLabel(instances, fkSet);
+//        List<Instance> undersampledInstances = underSampling(splitBylabel.get(Instance.Result.NO_FOREIGN_KEY), 0.01);
+
+//        undersampledInstances.addAll(splitBylabel.get(Instance.Result.FOREIGN_KEY));
+//        Collections.shuffle(undersampledInstances);
+//        getLogger().info("After modification, detect {} instances overall.", undersampledInstances.size());
+
         this.features.add(new CoverageFeature(statsCollection));
         this.features.add(new DependentAndReferencedFeature());
         this.features.add(new DistinctDependentValuesFeature(statsCollection));
         this.features.add(new MultiDependentFeature());
         this.features.add(new MultiReferencedFeature());
 
-        Dataset dataset = new Dataset(instances, features);
-        dataset.buildFeatureValueDistribution();
-        dataset.labelDataset(fkSet);
+        Dataset ds = new Dataset(instances, features);
+        ds.labelDataset(fkSet);
+//        Dataset trainSet = ds.sampledDataset(Instance.Result.NO_FOREIGN_KEY, 0.005);
+        ds.buildFeatureValueDistribution();
+        ds.normalize();
 
-        NaiveBayesW naiveBayesW = new NaiveBayesW(dataset);
+        Dataset testData = ds.getTrainAndReturnTest(0.5);
+
+        NonrandomUnderSampling nonrandomUnderSampling = new NonrandomUnderSampling(ds, Instance.Result.NO_FOREIGN_KEY, 5);
+        Dataset dataset = nonrandomUnderSampling.sampling(0.01);
+//        testData.getDataset().addAll(nonrandomUnderSampling.getUnselectedMajorityClassInstances());
+        testData.buildDatasetStatistics();
+        testData.buildFeatureValueDistribution();
+
+        dataset.buildFeatureValueDistribution();
+        getLogger().info("After under sampling, detect {} instances, including {} non-FKs and {} FKs.",
+                dataset.getDataset().size(),
+                dataset.getDataset().stream().filter(instance -> instance.getIsForeignKey().equals(Instance.Result.NO_FOREIGN_KEY)).collect(Collectors.toList()).size(),
+                dataset.getDataset().stream().filter(instance -> instance.getIsForeignKey().equals(Instance.Result.FOREIGN_KEY)).collect(Collectors.toList()).size());
+
+//        NaiveBayesW naiveBayesW = new NaiveBayesW(dataset);
+        NaiveBayesW naiveBayesW = new NaiveBayesW(dataset, testData);
         naiveBayesW.buildClassifier();
 
-        J48W j48W = new J48W(dataset);
+        J48W j48W = new J48W(dataset, testData);
         j48W.buildClassifier();
 
-        SVMW svmw = new SVMW(dataset);
+        SVMW svmw = new SVMW(dataset, testData);
         svmw.buildClassifier();
 
-        DecisionTableW decisionTableW = new DecisionTableW(dataset);
+        DecisionTableW decisionTableW = new DecisionTableW(dataset, testData);
         decisionTableW.buildClassifier();
+    }
+
+    private List<Instance> underSampling(List<Instance> instances, double ratio) {
+        int reducedSize = (int) ((double)instances.size()*ratio);
+        List<Instance> reducedInstances = new LinkedList<>();
+        Collections.shuffle(instances);
+        reducedInstances.addAll(instances.subList(0,reducedSize));
+        return reducedInstances;
+    }
+
+    private Map<Instance.Result, List<Instance>> splitByLabel(List<Instance> instances, Set<UnaryForeignKeyCandidate> fkSet) {
+        Map<Instance.Result, List<Instance>> splitByLabel = new HashMap<>();
+        splitByLabel.putIfAbsent(Instance.Result.FOREIGN_KEY,
+                instances.stream().filter(instance -> fkSet.contains(instance)).collect(Collectors.toList()));
+        splitByLabel.putIfAbsent(Instance.Result.NO_FOREIGN_KEY,
+                instances.stream().filter(instance -> !fkSet.contains(instance)).collect(Collectors.toList()));
+        return splitByLabel;
     }
 
     /**
@@ -222,43 +260,6 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
     @Override
     protected boolean isCleanUpRequested() {
         return false;
-    }
-
-    private Set<UnaryForeignKeyCandidate> readFkFromFile() {
-        Set<UnaryForeignKeyCandidate> fkcandidates = new HashSet<>();
-        try {
-            Pattern pattern = Pattern.compile("\\[([^\\[\\]]*)\\]");
-            BufferedReader bufferedReader = new BufferedReader(new FileReader(this.parameters.evaluationFile));
-            String line;
-            int count = 0;
-            while ((line=bufferedReader.readLine())!=null) {
-                String[] info = line.split(" c ");
-                Matcher matcher = pattern.matcher(info[0]);
-                String lhs = "";
-                while (matcher.find()) {
-                    lhs = matcher.group(1);
-                }
-                matcher = pattern.matcher(info[1]);
-                String rhs = "";
-                while (matcher.find()) {
-                    rhs = matcher.group(1);
-                }
-                int lhsId = getColId(lhs);
-                int rhsId = getColId(rhs);
-                if (lhsId!=-1&&rhsId!=-1) {
-                    fkcandidates.add(new UnaryForeignKeyCandidate(lhsId, rhsId));
-                }
-                System.out.println(count++);
-            }
-            bufferedReader.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-//        } finally {
-//            return fkcandidates;
-        }
-        return fkcandidates;
     }
 
     private int getColId(String line) {

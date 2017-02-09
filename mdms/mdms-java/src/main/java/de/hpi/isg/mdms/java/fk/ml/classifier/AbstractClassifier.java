@@ -1,11 +1,6 @@
 package de.hpi.isg.mdms.java.fk.ml.classifier;
 
-import de.hpi.isg.mdms.java.fk.Dataset;
-import de.hpi.isg.mdms.java.fk.Instance;
-import de.hpi.isg.mdms.java.fk.UnaryForeignKeyCandidate;
-
-import java.util.List;
-import java.util.Map;
+import de.hpi.isg.mdms.java.util.Dataset;
 
 /**
  * An abstract classifier class holding some basic necessary information of a classifier. It has to be extended by a

@@ -1,19 +1,21 @@
 package de.hpi.isg.mdms.java.ml;
 
-import de.hpi.isg.mdms.java.*;
-import de.hpi.isg.mdms.java.fk.Dataset;
-import de.hpi.isg.mdms.java.fk.Instance;
-import de.hpi.isg.mdms.java.fk.UnaryForeignKeyCandidate;
-import de.hpi.isg.mdms.java.fk.feature.CoverageFeature;
-import de.hpi.isg.mdms.java.fk.feature.DistinctDependentValuesFeature;
-import de.hpi.isg.mdms.java.fk.feature.Feature;
+import de.hpi.isg.mdms.java.classifier.DecisionTableW;
+import de.hpi.isg.mdms.java.classifier.J48W;
+import de.hpi.isg.mdms.java.classifier.NaiveBayesW;
+import de.hpi.isg.mdms.java.classifier.SVMW;
+import de.hpi.isg.mdms.java.util.Dataset;
+import de.hpi.isg.mdms.java.util.Instance;
+import de.hpi.isg.mdms.java.util.UnaryForeignKeyCandidate;
+import de.hpi.isg.mdms.java.feature.CoverageFeature;
+import de.hpi.isg.mdms.java.feature.DistinctDependentValuesFeature;
+import de.hpi.isg.mdms.java.feature.Feature;
+import de.hpi.isg.mdms.java.util.WekaConverter;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.BufferedReader;
-import java.io.FileInputStream;
 import java.io.FileReader;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 

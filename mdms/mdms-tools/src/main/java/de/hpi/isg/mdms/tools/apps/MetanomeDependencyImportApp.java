@@ -11,10 +11,7 @@ import de.hpi.isg.mdms.tools.metanome.reader.*;
 import de.metanome.backend.result_receiver.ResultReceiver;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Imports results in the user-readable Metanome format.
@@ -55,12 +52,23 @@ public class MetanomeDependencyImportApp extends MdmsAppTemplate<MetanomeDepende
                 this.parameters.schemaName,
                 null,
                 String.format("%s (%s)", this.parameters.getDescription(), new Date()))) {
+            List<File> resultFiles = new LinkedList<>();
             this.parameters.resultFiles.stream()
                     .map(File::new)
                     .filter(file -> {
                         getLogger().info("Loading {}.", file);
                         return true;
                     })
+//                    .forEach(file -> {
+//                        if (file.isDirectory()) {
+//                            File[] files = file.listFiles();
+//                            resultFiles.addAll(Arrays.asList(files));
+//                        }
+//                        else {
+//                            resultFiles.add(file);
+//                        }
+//                    });
+//            resultFiles.stream().forEach(file -> resultReader.parse(file, resultReceiver));
                     .forEach(resultFile -> resultReader.parse(resultFile, resultReceiver));
         }
 

@@ -12,6 +12,7 @@ import de.hpi.isg.mdms.model.targets.Column;
 import de.hpi.isg.mdms.model.targets.Schema;
 import de.hpi.isg.mdms.model.targets.Table;
 import de.hpi.isg.mdms.tools.metanome.ResultMetadataStoreWriter;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.File;
@@ -32,12 +33,16 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
     /**
      * Pattern to extract JSON keys for the top k frequent values.
      */
-    private static final Pattern TOP_K_FREQUENT_VALUES_PATTERN = Pattern.compile("Top (\\d+) frquent Items");
+//    private static final Pattern TOP_K_FREQUENT_VALUES_PATTERN = Pattern.compile("Top (\\d+) frquent Items");
+    private static final Pattern TOP_K_FREQUENT_VALUES_PATTERN = Pattern.compile("Frequency Of Top (\\d+) Frequent Items");
 
     /**
      * Pattern to generate JSON key for the top k frequent values.
      */
-    private static final String TOP_K_FREQUENT_VALUES_FORMAT = "Top %d frquent Items";
+//    private static final String TOP_K_FREQUENT_VALUES_FORMAT = "Top %d frquent Items";
+    private static final String TOP_K_FREQUENT_VALUES_FORMAT = "Top %d frequent items";
+
+    private static final String FREQUENCY_TOP_K_ITEMS_FORMAT = "Frequency Of Top %d Frequent Items";
 
     /**
      * Key used in the {@link #executionMetadata} to present the ID of the generated constraint collection.
@@ -87,7 +92,8 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
             // Now import all the files.
             for (Map.Entry<File, String> fileToTableNameEntry : fileToTableNameMap.entrySet()) {
                 final File statisticsFile = fileToTableNameEntry.getKey();
-                final String tableName = fileToTableNameEntry.getValue();
+//                final String tableName = fileToTableNameEntry.getValue();
+                final String tableName = fileToTableNameEntry.getValue()+".csv";
 
                 // Find the table in the schema.
                 final Table table = schema.getTableByName(tableName);
@@ -108,29 +114,49 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
                 }
 
                 // The first line contains general data about the profiled table.
-                final String firstLine = lines.get(0);
-                final long numTuples = processFirstStatisticsFileLine(firstLine, table, constraintCollection);
+//                final String firstLine = lines.get(0);
+//                final long numTuples = processFirstStatisticsFileLine(firstLine, table, constraintCollection);
 
+                int numTuples = 0;
+                for (String columnStatisticsLine : lines) {
+                    try {
+                        final JSONObject columnStatisticsObject = new JSONObject(columnStatisticsLine);
+                        final int numberDistinctValue = columnStatisticsObject.getJSONObject("statisticMap")
+                                .getJSONObject("Number of Distinct Values").getInt("value");
+                        if (numTuples < numberDistinctValue) {
+                            numTuples = numberDistinctValue;
+                        }
+                    } catch (Exception e) {
+                        getLogger().error("Could not handle " + columnStatisticsLine + ".", e);
+                    }
+                }
                 // All following lines contain statistics on different columns.
-                for (String columnStatisticsLine : lines.subList(1, lines.size())) {
+                for (String columnStatisticsLine : lines) {
 
                     try {
                         final JSONObject columnStatisticsObject = new JSONObject(columnStatisticsLine);
-                        final String metanomeColumnIdentifier = columnStatisticsObject.getString("column Name");
-                        final String columnName = ResultMetadataStoreWriter.convertMetanomeColumnIdentifier(metanomeColumnIdentifier);
+//                        final String metanomeColumnIdentifier = columnStatisticsObject.getString("column Name");
+                        final JSONArray columnIdentifierArr = columnStatisticsObject
+                                .getJSONObject("columnCombination")
+                                .getJSONArray("columnIdentifiers");
+//                        final String tableName = columnIdentifier.getString("tableIdentifier");
+                        final String columnName = ResultMetadataStoreWriter
+                                .convertMetanomeColumnIdentifier(columnIdentifierArr.getJSONObject(0).getString("columnIdentifier"));
+
                         final Column column = table.getColumnByName(columnName);
                         if (column == null) {
                             getLogger().warn("Could not find the column {} in table {}. Skipping...", columnName, table.getName());
                             continue;
                         }
-                        extractGeneralColumnStatistics(columnStatisticsObject, column, constraintCollection, numTuples);
+                        final JSONObject statisticMapObject = columnStatisticsObject.getJSONObject("statisticMap");
+                        extractGeneralColumnStatistics(statisticMapObject, column, constraintCollection, numTuples);
 
 
                         // For numeric columns, create a specific statistics object.
-                        extractNumberColumnStatistics(constraintCollection, columnStatisticsObject, column);
+                        extractNumberColumnStatistics(constraintCollection, statisticMapObject, column);
 
                         // For character columns, create a specific statistics object.
-                        extractTextColumnStatistics(constraintCollection, columnStatisticsObject, column);
+                        extractTextColumnStatistics(constraintCollection, statisticMapObject, column);
                     } catch (Exception e) {
                         getLogger().error("Could not handle " + columnStatisticsLine + ".", e);
                     }
@@ -155,13 +181,12 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
     private void extractTextColumnStatistics(ConstraintCollection constraintCollection, JSONObject columnStatisticsObject, Column column) {
         if (columnStatisticsObject.has("Min String")) {
             TextColumnStatistics textColumnStatistics = new TextColumnStatistics(column.getId());
-            textColumnStatistics.setMinValue(columnStatisticsObject.getString("Min String"));
-            textColumnStatistics.setMaxValue(columnStatisticsObject.getString("Max String"));
-            textColumnStatistics.setMinValue(columnStatisticsObject.getString("Min String"));
-            textColumnStatistics.setShortestValue(columnStatisticsObject.getString("Shortest String"));
-            textColumnStatistics.setLongestValue(columnStatisticsObject.getString("Longest String"));
+            textColumnStatistics.setMinValue(columnStatisticsObject.getJSONObject("Min String").getString("value"));
+            textColumnStatistics.setMaxValue(columnStatisticsObject.getJSONObject("Max String").getString("value"));
+            textColumnStatistics.setShortestValue(columnStatisticsObject.getJSONObject("Shortest String").getString("value"));
+            textColumnStatistics.setLongestValue(columnStatisticsObject.getJSONObject("Longest String").getString("value"));
             if (columnStatisticsObject.has("Symantic Data Type")) {
-                textColumnStatistics.setSubtype(columnStatisticsObject.getString("Symantic Data Type"));
+                textColumnStatistics.setSubtype(columnStatisticsObject.getJSONObject("Symantic Data Type").getString("value"));
             }
             constraintCollection.add(textColumnStatistics);
         }
@@ -178,11 +203,11 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
     private void extractNumberColumnStatistics(ConstraintCollection constraintCollection, JSONObject columnStatisticsObject, Column column) {
         if (columnStatisticsObject.has("Min")) {
             NumberColumnStatistics numberColumnStatistics = new NumberColumnStatistics(column.getId());
-            numberColumnStatistics.setMinValue(columnStatisticsObject.getDouble("Min"));
-            numberColumnStatistics.setMaxValue(columnStatisticsObject.getDouble("Max"));
-            numberColumnStatistics.setAverage(columnStatisticsObject.getDouble("Avg."));
+            numberColumnStatistics.setMinValue(columnStatisticsObject.getJSONObject("Min").getDouble("value"));
+            numberColumnStatistics.setMaxValue(columnStatisticsObject.getJSONObject("Max").getDouble("value"));
+            numberColumnStatistics.setAverage(columnStatisticsObject.getJSONObject("Avg.").getDouble("value"));
             if (columnStatisticsObject.has("Standard Deviation")) {
-                numberColumnStatistics.setStandardDeviation(columnStatisticsObject.getDouble("Standard Deviation"));
+                numberColumnStatistics.setStandardDeviation(columnStatisticsObject.getJSONObject("Standard Deviation").getDouble("value"));
             }
             constraintCollection.add(numberColumnStatistics);
         }
@@ -201,14 +226,14 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
                                                 ConstraintCollection constraintCollection,
                                                 long numTuples) {
         // Harvest the column type.
-        final String dataType = columnStatisticsObject.getString("Data Type");
+        final String dataType = columnStatisticsObject.getJSONObject("Data Type").getString("value");
         TypeConstraint.buildAndAddToCollection(new SingleTargetReference(column.getId()), constraintCollection, dataType);
 
         // Harvest the general column statistics.
         ColumnStatistics columnStatistics = new ColumnStatistics(column.getId());
-        columnStatistics.setNumNulls(columnStatisticsObject.getLong("# Null"));
-        columnStatistics.setFillStatus(1d - columnStatisticsObject.getDouble("% Null"));
-        columnStatistics.setNumDistinctValues(columnStatisticsObject.getLong("# Distinct"));
+        columnStatistics.setNumNulls(columnStatisticsObject.getJSONObject("Nulls").getLong("value"));
+        columnStatistics.setFillStatus(1d - columnStatisticsObject.getJSONObject("Percentage of Nulls").getDouble("value"));
+        columnStatistics.setNumDistinctValues(columnStatisticsObject.getJSONObject("Number of Distinct Values").getLong("value"));
 
         // Some statistics can only exist if there are any values at all.
         long numNonNulls = numTuples - columnStatistics.getNumNulls();
@@ -228,12 +253,20 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
                     })
                     .max();
             if (maxK.isPresent()) {
-                String key = String.format(TOP_K_FREQUENT_VALUES_FORMAT, maxK.getAsInt());
-                final JSONObject topKFrequentValuesObject = columnStatisticsObject.getJSONObject(key);
-                final List<ColumnStatistics.ValueOccurrence> topKEntryList = topKFrequentValuesObject.keySet().stream()
-                        .map((topKValue) -> {
-                            String count = topKFrequentValuesObject.getString(topKValue);
-                            return new ColumnStatistics.ValueOccurrence(topKValue, Long.valueOf(count));
+                String items = String.format(TOP_K_FREQUENT_VALUES_FORMAT, maxK.getAsInt());
+                String frequency = String.format(FREQUENCY_TOP_K_ITEMS_FORMAT, maxK.getAsInt());
+                final JSONObject topKFrequentValuesObject = columnStatisticsObject.getJSONObject(items);
+                final JSONObject topKFrequncyObject = columnStatisticsObject.getJSONObject(frequency);
+                Map<String, Long> itemFrequnceyMap = new HashMap<>();
+                JSONArray itemsArray = topKFrequentValuesObject.getJSONArray("value");
+                JSONArray frequencyArray = topKFrequncyObject.getJSONArray("value");
+                for (int i = 0; i < itemsArray.length(); i++) {
+                    itemFrequnceyMap.putIfAbsent(itemsArray.getString(i), frequencyArray.getLong(i));
+                }
+
+                final List<ColumnStatistics.ValueOccurrence> topKEntryList = itemFrequnceyMap.keySet().stream()
+                        .map(topKValue -> {
+                            return new ColumnStatistics.ValueOccurrence(topKValue, itemFrequnceyMap.get(topKValue));
                         })
                         .sorted(Collections.reverseOrder())
                         .collect(Collectors.toList());

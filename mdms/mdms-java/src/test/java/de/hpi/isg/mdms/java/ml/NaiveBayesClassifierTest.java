@@ -8,7 +8,7 @@
 //import de.hpi.isg.mdms.java.fk.Dataset;
 //import de.hpi.isg.mdms.java.fk.Instance;
 //import de.hpi.isg.mdms.java.fk.UnaryForeignKeyCandidate;
-//import de.hpi.isg.mdms.java.fk.feature.*;
+//import de.hpi.isg.mdms.java.feature.*;
 //import de.hpi.isg.mdms.java.fk.ml.classifier.AbstractClassifier;
 //import de.hpi.isg.mdms.java.fk.ml.classifier.NaiveBayes;
 //import de.hpi.isg.mdms.model.DefaultMetadataStore;
