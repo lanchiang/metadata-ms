@@ -10,9 +10,7 @@ import java.util.stream.Collectors;
  * @author Lan Jiang
  * @since 06/02/2017
  */
-public class NonrandomUnderSampling {
-
-    private Dataset dataset;
+public class NonrandomUnderSampling extends Undersampling {
 
     /**
      * The nearest distance of all the samples in the majority class.
@@ -22,10 +20,6 @@ public class NonrandomUnderSampling {
     private Map<Instance, Double> possiblityOfSelected;
 
     private Map<Double, Instance> samplingSlot;
-
-    private Instance.Result majorityClass;
-
-    private Map<Instance.Result, List<Instance>> instanceByClasses;
 
     private List<Instance> unselectedMajorityClassInstances;
 
