@@ -26,24 +26,14 @@ public class RandomUnderSampling extends UnderSampling {
     @Override
     public Dataset sampling() {
         List<Instance> instances = dataset.getDataset();
-        Map<Instance.Result, List<Instance>> instanceByClasses = dataset.getInstancesByClasses();
+        instanceByClasses = dataset.getInstancesByClasses();
         int reducedSize = (int) ((double)instances.size()*ratio);
         List<Instance> reducedInstances = new LinkedList<>();
-        for (Instance.Result iterResult : Instance.Result.values()) {
-            if (iterResult.equals(Instance.Result.UNKNOWN)) {
-                continue;
-            }
-            List<Instance> ins = instanceByClasses.get(iterResult);
-            if (iterResult.equals(majorityClass)) {
-                Collections.shuffle(ins);
-                reducedInstances.addAll(ins.subList(0, reducedSize));
-            } else {
-                reducedInstances.addAll(instanceByClasses.get(iterResult));
-            }
-        }
+        List<Instance> ins = instanceByClasses.get(majorityClass);
+        Collections.shuffle(ins);
+        reducedInstances.addAll(ins.subList(0, reducedSize));
         Collections.shuffle(reducedInstances);
-        Dataset sampledDataset = new Dataset(reducedInstances, this.dataset.getFeatures());
-        sampledDataset.buildFeatureValueDistribution();
+        Dataset sampledDataset = new Dataset(reducedInstances, this.dataset.getFeatures(), majorityClass);
         return sampledDataset;
     }
 }

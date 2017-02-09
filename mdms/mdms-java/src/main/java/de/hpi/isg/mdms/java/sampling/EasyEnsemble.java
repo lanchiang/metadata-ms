@@ -41,8 +41,9 @@ public class EasyEnsemble extends NonrandomUnderSampling {
         int i = 0;
         RandomUnderSampling randomUnderSampling = new RandomUnderSampling(dataset, majorityClass, ratio);
         Dataset minorityDataset = new Dataset(instanceByClasses.get(minorityClass), dataset.getFeatures());
-        Classifier[] classifiers = new Classifier[iterationsCount];
-        while ( i < iterationsCount ) {
+        minorityDataset.setLabel(minorityClass);
+        Classifier[] classifiers = new Classifier[subsetsCount];
+        while ( i < subsetsCount ) {
             Dataset reducedMajorityDataset = randomUnderSampling.sampling();
             Dataset reducedDataset = reducedMajorityDataset.combineWith(minorityDataset);
             AdaboostW adaboostW = new AdaboostW(reducedDataset);
