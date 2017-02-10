@@ -15,18 +15,26 @@ import de.hpi.isg.mdms.java.classifier.DecisionTableW;
 import de.hpi.isg.mdms.java.classifier.J48W;
 import de.hpi.isg.mdms.java.classifier.NaiveBayesW;
 import de.hpi.isg.mdms.java.classifier.SVMW;
-import de.hpi.isg.mdms.java.sampling.NonrandomUnderSampling;
+import de.hpi.isg.mdms.java.sampling.EasyEnsemble;
+import de.hpi.isg.mdms.java.sampling.NonrandomU;
 import de.hpi.isg.mdms.java.util.Dataset;
 import de.hpi.isg.mdms.java.util.Instance;
 import de.hpi.isg.mdms.java.util.UnaryForeignKeyCandidate;
 import de.hpi.isg.mdms.java.feature.*;
+import de.hpi.isg.mdms.java.util.WekaConverter;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.targets.Table;
 import de.hpi.isg.mdms.model.util.IdUtils;
 import de.hpi.isg.mdms.rdbms.SQLiteInterface;
 import de.hpi.isg.mdms.tools.metanome.ResultMetadataStoreWriter;
 import it.unimi.dsi.fastutil.ints.*;
+import weka.classifiers.Classifier;
+import weka.classifiers.Evaluation;
+import weka.core.Instances;
+import weka.core.converters.ArffLoader;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -161,55 +169,100 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
         this.features.add(new MultiDependentFeature());
         this.features.add(new MultiReferencedFeature());
 
-        Dataset ds = new Dataset(instances, features);
-        ds.labelDataset(fkSet);
+        Dataset ds = new Dataset(instances, features, fkSet);
 //        Dataset trainSet = ds.sampledDataset(Instance.Result.NO_FOREIGN_KEY, 0.005);
-        ds.buildFeatureValueDistribution();
-        ds.normalize();
+//        ds.normalize();
 
         Dataset testData = ds.getTrainAndReturnTest(0.5);
 
-        NonrandomUnderSampling nonrandomUnderSampling = new NonrandomUnderSampling(ds, Instance.Result.NO_FOREIGN_KEY, 5);
-        Dataset dataset = nonrandomUnderSampling.sampling(0.01);
+//        NonrandomU nonrandomUnderSampling = new NonrandomU(ds, Instance.Result.NO_FOREIGN_KEY, 5);
+//        Dataset dataset = nonrandomUnderSampling.sampling(0.01);
 //        testData.getDataset().addAll(nonrandomUnderSampling.getUnselectedMajorityClassInstances());
-        testData.buildDatasetStatistics();
-        testData.buildFeatureValueDistribution();
+//        testData.buildDatasetStatistics();
+//        testData.buildFeatureValueDistribution();
 
-        dataset.buildFeatureValueDistribution();
-        getLogger().info("After under sampling, detect {} instances, including {} non-FKs and {} FKs.",
-                dataset.getDataset().size(),
-                dataset.getDataset().stream().filter(instance -> instance.getIsForeignKey().equals(Instance.Result.NO_FOREIGN_KEY)).collect(Collectors.toList()).size(),
-                dataset.getDataset().stream().filter(instance -> instance.getIsForeignKey().equals(Instance.Result.FOREIGN_KEY)).collect(Collectors.toList()).size());
+        EasyEnsemble easyEnsemble = new EasyEnsemble(ds, Instance.Result.NO_FOREIGN_KEY, 0.01, 10, 0);
+        Classifier[] classifiers = easyEnsemble.getClassifier();
+        classifyInstances(classifiers, testData);
+
+//        dataset.buildFeatureValueDistribution();
+//        getLogger().info("After under sampling, detect {} instances, including {} non-FKs and {} FKs.",
+//                dataset.getDataset().size(),
+//                dataset.getDataset().stream().filter(instance -> instance.getIsForeignKey().equals(Instance.Result.NO_FOREIGN_KEY)).collect(Collectors.toList()).size(),
+//                dataset.getDataset().stream().filter(instance -> instance.getIsForeignKey().equals(Instance.Result.FOREIGN_KEY)).collect(Collectors.toList()).size());
 
 //        NaiveBayesW naiveBayesW = new NaiveBayesW(dataset);
-        NaiveBayesW naiveBayesW = new NaiveBayesW(dataset, testData);
+        NaiveBayesW naiveBayesW = new NaiveBayesW(ds, testData);
         naiveBayesW.buildClassifier();
-
-        J48W j48W = new J48W(dataset, testData);
+//
+        J48W j48W = new J48W(ds, testData);
         j48W.buildClassifier();
 
-        SVMW svmw = new SVMW(dataset, testData);
+        SVMW svmw = new SVMW(ds, testData);
         svmw.buildClassifier();
 
-        DecisionTableW decisionTableW = new DecisionTableW(dataset, testData);
+        DecisionTableW decisionTableW = new DecisionTableW(ds, testData);
         decisionTableW.buildClassifier();
     }
 
-    private List<Instance> underSampling(List<Instance> instances, double ratio) {
-        int reducedSize = (int) ((double)instances.size()*ratio);
-        List<Instance> reducedInstances = new LinkedList<>();
-        Collections.shuffle(instances);
-        reducedInstances.addAll(instances.subList(0,reducedSize));
-        return reducedInstances;
-    }
+    private void classifyInstances(Classifier[] classifiers, Dataset testSet) {
+        try {
+            WekaConverter wekaConverter = new WekaConverter(testSet, "testData");
+            wekaConverter.writeDataIntoFile();
+            String fileName = wekaConverter.getFileName();
+            ArffLoader loader = new ArffLoader();
+            loader.setFile(new File(fileName));
+            Instances testData = null;
+            testData = loader.getDataSet();
+            testData.setClassIndex(testData.numAttributes()-1);
 
-    private Map<Instance.Result, List<Instance>> splitByLabel(List<Instance> instances, Set<UnaryForeignKeyCandidate> fkSet) {
-        Map<Instance.Result, List<Instance>> splitByLabel = new HashMap<>();
-        splitByLabel.putIfAbsent(Instance.Result.FOREIGN_KEY,
-                instances.stream().filter(instance -> fkSet.contains(instance)).collect(Collectors.toList()));
-        splitByLabel.putIfAbsent(Instance.Result.NO_FOREIGN_KEY,
-                instances.stream().filter(instance -> !fkSet.contains(instance)).collect(Collectors.toList()));
-        return splitByLabel;
+            Map<String, Integer> confusionMatrix = new HashMap<>();
+            confusionMatrix.putIfAbsent("fkfk", 0);
+            confusionMatrix.putIfAbsent("fknfk", 0);
+            confusionMatrix.putIfAbsent("nfkfk", 0);
+            confusionMatrix.putIfAbsent("nfknfk", 0);
+            testData.stream()
+                    .filter(instance -> {
+                        List<String> results = Arrays.stream(classifiers).map(classifier -> {
+                            String pred = null;
+                            try {
+                                double predicted = classifier.classifyInstance(instance);
+                                pred = instance.classAttribute().value((int) predicted);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                            return pred;
+                        }).collect(Collectors.toList());
+                        String actual = instance.toString(instance.classIndex());
+                        long nonFKCount = results.stream().filter(s -> s.equals("NO_FOREIGN_KEY")).count();
+                        long FKCount = results.stream().filter(s -> s.equals("FOREIGN_KEY")).count();
+//                        System.out.println(nonFKCount+"\t"+FKCount);
+                        String predicted = (nonFKCount>=FKCount)?"NON_FOREIGN_KEY":"FOREIGN_KEY";
+                        System.out.println(predicted+"\t"+actual);
+                        if (actual.equals("FOREIGN_KEY")) {
+                            if (predicted.equals("FOREIGN_KEY")) {
+                                confusionMatrix.put("fkfk",confusionMatrix.get("fkfk")+1);
+                            } else {
+                                confusionMatrix.put("fknfk", confusionMatrix.get("fknfk")+1);
+                            }
+                        } else {
+                            if (predicted.equals("FOREIGN_KEY")) {
+                                confusionMatrix.put("nfkfk",confusionMatrix.get("nfkfk")+1);
+                            } else {
+                                confusionMatrix.put("nfknfk", confusionMatrix.get("nfknfk")+1);
+                            }
+                        }
+                        if (actual.equals(predicted)) {
+                            return true;
+                        }
+                        return false;
+                    }).collect(Collectors.toList());
+            System.out.println("FOREIGN_KEY" + "\t" + "NON_FOREIGN_KEY" + "\t" + "<--predicted");
+            System.out.println(confusionMatrix.get("fkfk")+"\t"+confusionMatrix.get("fknfk")+"\t"+"FOREIGN_KEY");
+            System.out.println(confusionMatrix.get("nfkfk")+"\t"+confusionMatrix.get("nfknfk")+"\t"+"NON_FOREIGN_KEY");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
