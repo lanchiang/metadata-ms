@@ -17,13 +17,21 @@ public class WekaConverter {
 
     private Dataset dataset;
 
-    private final String fileName = "data-into-file.arff";
+    private String relationName;
 
-    public void writeDataIntoFile(Dataset dataset) throws IOException {
+    private String fileName;
+
+    public WekaConverter(Dataset dataset, String relationName) {
         this.dataset = dataset;
+        this.relationName = relationName;
+        this.fileName = relationName+".arff";
+    }
+
+    public void writeDataIntoFile() throws IOException {
         BufferedWriter bw = new BufferedWriter(new FileWriter(fileName));
 
-        String line = "@relation trainSet";
+//        String line = "@relation trainSet";
+        String line = "@relation " + relationName;
         bw.write(line);
         bw.newLine();
         bw.newLine();
