@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
+ * The abstract base class for all the under sampling methods.
  * @author Lan Jiang
  * @since 09/02/2017
  */
