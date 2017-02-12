@@ -9,9 +9,14 @@ import java.util.Collection;
 /**
  * Created by jianghm on 2016/10/18.
  */
-public class DependentAndReferencedFeature extends Feature implements FeatureUpdate{
+public class DependentAndReferencedFeature extends Feature {
 
     private final static String DEPENDENT_AND_REFERENCED_FEATURE_NAME = "dependent_and_referenced";
+
+    /**
+     * Stores the number of inds.
+     */
+    private int numINDs;
 
     @Override
     public void calcualteFeatureValue(Collection<Instance> instanceCollection) {
@@ -31,7 +36,13 @@ public class DependentAndReferencedFeature extends Feature implements FeatureUpd
             final UnaryForeignKeyCandidate fkc = instance.getForeignKeyCandidate();
             final int depColumn = fkc.getDependentColumnId();
             final int numReferences = columnNumReferences.get(depColumn);
-            instance.getFeatureVector().put(DEPENDENT_AND_REFERENCED_FEATURE_NAME, numReferences);
+            double normalized = normalize(numReferences);
+            instance.getFeatureVector().put(DEPENDENT_AND_REFERENCED_FEATURE_NAME, normalized);
         }
+    }
+
+    @Override
+    public double normalize(double valueForNormalizing) {
+        return valueForNormalizing/(double)numINDs;
     }
 }

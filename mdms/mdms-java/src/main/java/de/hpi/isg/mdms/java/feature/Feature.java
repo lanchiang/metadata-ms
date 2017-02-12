@@ -4,7 +4,7 @@ package de.hpi.isg.mdms.java.feature;
  * Super class for various feature classes.
  * @author Lan Jiang
  */
-abstract public class Feature implements FeatureUpdate{
+abstract public class Feature implements FeatureUpdate, NormalizationHandler {
 
     protected String featureName;
 

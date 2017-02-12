@@ -58,6 +58,13 @@ public class CoverageFeature extends Feature {
         }
     }
 
+    @Override
+    public double normalize(double valueForNormalizing) {
+        // coverage needs no normalization.
+        return 0.0;
+    }
+
+
 //    @Override
 //    public void calculateFeatureValueDistribution(Dataset trainSet) {
 //        // count for each value in this feature, just for nominal type feature

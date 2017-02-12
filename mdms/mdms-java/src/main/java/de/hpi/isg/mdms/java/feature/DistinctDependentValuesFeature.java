@@ -12,7 +12,7 @@ import java.util.Collection;
 /**
  * Created by jianghm on 2016/10/18.
  */
-public class DistinctDependentValuesFeature extends Feature implements FeatureUpdate{
+public class DistinctDependentValuesFeature extends Feature {
 
     private final static String DISTINCT_DEPENDENT_VALUES_FEATURE_NAME = "distinct_dependent_values";
 
@@ -20,6 +20,11 @@ public class DistinctDependentValuesFeature extends Feature implements FeatureUp
      * Stores the distinct value counts for all columns.
      */
     private final Int2LongMap distinctValues;
+
+    /**
+     * Stores the number of inds.
+     */
+    private int numINDs;
 
     public DistinctDependentValuesFeature() {
         distinctValues = new Int2LongOpenHashMap();
@@ -43,11 +48,18 @@ public class DistinctDependentValuesFeature extends Feature implements FeatureUp
 
     @Override
     public void calcualteFeatureValue(Collection<Instance> instanceCollection) {
+        numINDs = instanceCollection.size();
         for (Instance instance : instanceCollection) {
             final UnaryForeignKeyCandidate fkc = instance.getForeignKeyCandidate();
 
             long depDistinctValueCount = this.distinctValues.get(fkc.getDependentColumnId());
-            instance.getFeatureVector().put(DISTINCT_DEPENDENT_VALUES_FEATURE_NAME, depDistinctValueCount);
+            double nomalized = normalize(depDistinctValueCount);
+            instance.getFeatureVector().put(DISTINCT_DEPENDENT_VALUES_FEATURE_NAME, nomalized);
         }
+    }
+
+    @Override
+    public double normalize(double valueForNormalizing) {
+        return valueForNormalizing/(double)numINDs;
     }
 }

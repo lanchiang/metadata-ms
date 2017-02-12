@@ -9,11 +9,16 @@ import java.util.Collection;
 /**
  * Created by jianghm on 2016/10/18.
  */
-public class MultiDependentFeature extends Feature implements FeatureUpdate{
+public class MultiDependentFeature extends Feature {
 
 //    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final static String MULTI_DEPENDENT_FEATURE_NAME = "multi_dependent";
+
+    /**
+     * Stores the number of inds.
+     */
+    private int numINDs;
 
     @Override
     public void calcualteFeatureValue(Collection<Instance> instanceCollection) {
@@ -33,8 +38,14 @@ public class MultiDependentFeature extends Feature implements FeatureUpdate{
             final UnaryForeignKeyCandidate fkc = instance.getForeignKeyCandidate();
             final int depColumn = fkc.getDependentColumnId();
             final int numDependentOccurrences = columnNumDependentOccurrences.get(depColumn);
-            instance.getFeatureVector().put(MULTI_DEPENDENT_FEATURE_NAME, numDependentOccurrences);
+            double normalized = normalize(numDependentOccurrences);
+            instance.getFeatureVector().put(MULTI_DEPENDENT_FEATURE_NAME, normalized);
         }
 
+    }
+
+    @Override
+    public double normalize(double valueForNormalizing) {
+        return valueForNormalizing/(double)numINDs;
     }
 }

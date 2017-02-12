@@ -9,9 +9,14 @@ import java.util.Collection;
 /**
  * Created by jianghm on 2016/10/18.
  */
-public class MultiReferencedFeature extends Feature implements FeatureUpdate{
+public class MultiReferencedFeature extends Feature {
 
     private final static String MULTI_REFERENCED_FEATURE_NAME = "multi_referenced";
+
+    /**
+     * Stores the number of inds.
+     */
+    private int numINDs;
 
     @Override
     public void calcualteFeatureValue(Collection<Instance> instanceCollection) {
@@ -31,7 +36,13 @@ public class MultiReferencedFeature extends Feature implements FeatureUpdate{
             final UnaryForeignKeyCandidate fkc = instance.getForeignKeyCandidate();
             final int refColumn = fkc.getReferencedColumnId();
             final int numReferences = columnNumReferences.get(refColumn);
-            instance.getFeatureVector().put(MULTI_REFERENCED_FEATURE_NAME, numReferences);
+            double normalized = normalize(numReferences);
+            instance.getFeatureVector().put(MULTI_REFERENCED_FEATURE_NAME, normalized);
         }
+    }
+
+    @Override
+    public double normalize(double valueForNormalizing) {
+        return valueForNormalizing/(double)numINDs;
     }
 }
