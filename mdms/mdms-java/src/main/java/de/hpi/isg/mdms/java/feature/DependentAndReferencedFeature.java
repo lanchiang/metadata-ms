@@ -36,7 +36,7 @@ public class DependentAndReferencedFeature extends Feature {
             final UnaryForeignKeyCandidate fkc = instance.getForeignKeyCandidate();
             final int depColumn = fkc.getDependentColumnId();
             final int numReferences = columnNumReferences.get(depColumn);
-            double normalized = normalize(numReferences);
+            double normalized = numReferences;
             instance.getFeatureVector().put(DEPENDENT_AND_REFERENCED_FEATURE_NAME, normalized);
         }
     }

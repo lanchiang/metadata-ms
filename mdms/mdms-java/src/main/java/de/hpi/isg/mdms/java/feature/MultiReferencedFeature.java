@@ -23,6 +23,8 @@ public class MultiReferencedFeature extends Feature {
         featureName = MULTI_REFERENCED_FEATURE_NAME;
         featureType = FeatureType.Numeric;
 
+        numINDs = instanceCollection.size();
+
         // Count the number of references for the columns.
         Int2IntOpenHashMap columnNumReferences = new Int2IntOpenHashMap();
         columnNumReferences.defaultReturnValue(0);
@@ -36,7 +38,8 @@ public class MultiReferencedFeature extends Feature {
             final UnaryForeignKeyCandidate fkc = instance.getForeignKeyCandidate();
             final int refColumn = fkc.getReferencedColumnId();
             final int numReferences = columnNumReferences.get(refColumn);
-            double normalized = normalize(numReferences);
+//            double normalized = normalize(numReferences);
+            double normalized = numReferences;
             instance.getFeatureVector().put(MULTI_REFERENCED_FEATURE_NAME, normalized);
         }
     }

@@ -25,6 +25,8 @@ public class MultiDependentFeature extends Feature {
         featureName = MULTI_DEPENDENT_FEATURE_NAME;
         featureType = FeatureType.Numeric;
 
+        numINDs = instanceCollection.size();
+
         // Count the number of references for the columns.
         Int2IntOpenHashMap columnNumDependentOccurrences = new Int2IntOpenHashMap();
         columnNumDependentOccurrences.defaultReturnValue(0);
@@ -39,6 +41,7 @@ public class MultiDependentFeature extends Feature {
             final int depColumn = fkc.getDependentColumnId();
             final int numDependentOccurrences = columnNumDependentOccurrences.get(depColumn);
             double normalized = normalize(numDependentOccurrences);
+//            double normalized = numDependentOccurrences;
             instance.getFeatureVector().put(MULTI_DEPENDENT_FEATURE_NAME, normalized);
         }
 
