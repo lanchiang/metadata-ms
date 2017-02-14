@@ -3,6 +3,7 @@ package de.hpi.isg.mdms.java.classifier;
 import de.hpi.isg.mdms.java.util.WekaConverter;
 import de.hpi.isg.mdms.java.util.Dataset;
 import weka.classifiers.AbstractClassifier;
+import weka.classifiers.Classifier;
 import weka.core.Instances;
 import weka.core.converters.ArffLoader;
 
@@ -31,8 +32,8 @@ abstract public class ClassifierW {
      */
     public void convertData() {
         try {
-            wekaConverter = new WekaConverter();
-            wekaConverter.writeDataIntoFile(trainSet);
+            wekaConverter = new WekaConverter(trainSet, "trainSet");
+            wekaConverter.writeDataIntoFile();
             String fileName = wekaConverter.getFileName();
             ArffLoader loader = new ArffLoader();
             loader.setFile(new File(fileName));
@@ -46,8 +47,8 @@ abstract public class ClassifierW {
     public void convertTrainAndTestData() {
         convertData();
         try {
-            wekaConverter = new WekaConverter();
-            wekaConverter.writeDataIntoFile(testSet);
+            wekaConverter = new WekaConverter(testSet, "testSet");
+            wekaConverter.writeDataIntoFile();
             String fileName = wekaConverter.getFileName();
             ArffLoader loader = new ArffLoader();
             loader.setFile(new File(fileName));
@@ -58,5 +59,5 @@ abstract public class ClassifierW {
         }
     }
 
-    abstract public void buildClassifier() throws Exception;
+    abstract public Classifier buildClassifier() throws Exception;
 }

@@ -26,7 +26,7 @@ public class DecisionTableW extends ClassifierW{
     }
 
     @Override
-    public void buildClassifier() throws Exception {
+    public Classifier buildClassifier() throws Exception {
 //        Evaluation eval = new Evaluation(data);
 //
 //        DecisionTable decisionTable = new DecisionTable();
@@ -42,5 +42,6 @@ public class DecisionTableW extends ClassifierW{
         System.out.println(evaluation.toSummaryString("\nDecisionTable Results\n", false));
         System.out.println(evaluation.toClassDetailsString("\nDecisionTable Results\n"));
         System.out.println(evaluation.toMatrixString("\nDecisionTable Confusing Matrix\n"));
+        return m_classifier;
     }
 }

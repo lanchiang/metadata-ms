@@ -61,8 +61,8 @@ public class WekaConverterTest {
 
     @Test
     public void testWriteToFile() throws Exception {
-        WekaConverter wc = new WekaConverter();
-        wc.writeDataIntoFile(dataset);
+        WekaConverter wc = new WekaConverter(dataset, "dataset");
+        wc.writeDataIntoFile();
     }
 
     @Test

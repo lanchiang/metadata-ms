@@ -51,6 +51,9 @@ abstract public class UnderSampling {
         this.minorityClass = minorityClass;
     }
 
+    protected UnderSampling() {
+    }
+
     /**
      * The sampling method, after sampling creates a new {@link Dataset} containing all the {@link Instance} sampled.
      * @return a {@link Dataset} containing all the sampled {@link Instance}

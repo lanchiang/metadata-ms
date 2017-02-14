@@ -22,7 +22,7 @@ public class J48W extends ClassifierW {
     }
 
     @Override
-    public void buildClassifier() throws Exception {
+    public Classifier buildClassifier() throws Exception {
 //        Evaluation eval = new Evaluation(data);
 //
 //        J48 tree = new J48();
@@ -38,5 +38,6 @@ public class J48W extends ClassifierW {
         System.out.println(evaluation.toSummaryString("\nJ48 Results\n", false));
         System.out.println(evaluation.toClassDetailsString("\nJ48 Results\n"));
         System.out.println(evaluation.toMatrixString("\nJ48 Confusing Matrix\n"));
+        return m_classifier;
     }
 }

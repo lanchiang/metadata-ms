@@ -22,7 +22,7 @@ public class NaiveBayesW extends ClassifierW {
     }
 
     @Override
-    public void buildClassifier() throws Exception {
+    public Classifier buildClassifier() throws Exception {
 //        Evaluation eval = new Evaluation(data);
 //        cls = new NaiveBayes();
 //        cls.buildClassifier(data);
@@ -41,5 +41,6 @@ public class NaiveBayesW extends ClassifierW {
         System.out.println(evaluation.toSummaryString("\nNaiveBayes Results\n", false));
         System.out.println(evaluation.toClassDetailsString("\nNaiveBayes Results\n"));
         System.out.println(evaluation.toMatrixString("\nNaive Bayes Confusing Matrix\n"));
+        return m_classifier;
     }
 }

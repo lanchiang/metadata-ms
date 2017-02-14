@@ -169,7 +169,8 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
         this.features.add(new MultiDependentFeature());
         this.features.add(new MultiReferencedFeature());
 
-        Dataset ds = new Dataset(instances, features, fkSet);
+        Dataset ds = new Dataset(instances, features);
+        ds.labelDataset(fkSet);
 //        Dataset trainSet = ds.sampledDataset(Instance.Result.NO_FOREIGN_KEY, 0.005);
 //        ds.normalize();
 
@@ -238,7 +239,7 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
                         long FKCount = results.stream().filter(s -> s.equals("FOREIGN_KEY")).count();
 //                        System.out.println(nonFKCount+"\t"+FKCount);
                         String predicted = (nonFKCount>=FKCount)?"NON_FOREIGN_KEY":"FOREIGN_KEY";
-                        System.out.println(predicted+"\t"+actual);
+//                        System.out.println(predicted+"\t"+actual);
                         if (actual.equals("FOREIGN_KEY")) {
                             if (predicted.equals("FOREIGN_KEY")) {
                                 confusionMatrix.put("fkfk",confusionMatrix.get("fkfk")+1);

@@ -33,7 +33,7 @@ public class RandomUnderSampling extends UnderSampling {
         Collections.shuffle(ins);
         reducedInstances.addAll(ins.subList(0, reducedSize));
         Collections.shuffle(reducedInstances);
-        Dataset sampledDataset = new Dataset(reducedInstances, this.dataset.getFeatures(), majorityClass);
+        Dataset sampledDataset = new Dataset(reducedInstances, this.dataset.getFeatures());
         return sampledDataset;
     }
 }

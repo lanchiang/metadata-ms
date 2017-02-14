@@ -1,6 +1,7 @@
 package de.hpi.isg.mdms.java.util;
 
 import de.hpi.isg.mdms.java.feature.Feature;
+import org.apache.commons.collections.ListUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -29,11 +30,14 @@ public class Dataset {
      */
     List<Feature> features;
 
+    private Map<Instance.Result, List<Instance>> instancesByClasses;
+
     public Dataset(List<Instance> dataset, List<Feature> features) {
         this.dataset = dataset;
         this.features = features;
 
         buildDatasetStatistics();
+        buildFeatureValueDistribution();
     }
 
     public List<Instance> getDataset() {
@@ -58,8 +62,8 @@ public class Dataset {
     public void buildDatasetStatistics() {
         numOfInstance = dataset.stream().count();
 
-        Map<Instance.Result, List<Instance>> instanceByClasses = dataset.stream().collect(Collectors.groupingBy(Instance::getIsForeignKey));
-        numOfClasses = instanceByClasses.entrySet().stream().count();
+        instancesByClasses = dataset.stream().collect(Collectors.groupingBy(Instance::getIsForeignKey));
+        numOfClasses = instancesByClasses.entrySet().stream().count();
     }
 
     public void buildFeatureValueDistribution() {
@@ -121,13 +125,13 @@ public class Dataset {
     }
 
     public Dataset getTrainAndReturnTest(double ratio) {
-        Map<Instance.Result, List<Instance>> instanceByClasses = dataset.stream().collect(Collectors.groupingBy(Instance::getIsForeignKey));
+        instancesByClasses = dataset.stream().collect(Collectors.groupingBy(Instance::getIsForeignKey));
         List<Instance> trainInstances = new LinkedList<>();
         List<Instance> testInstances = new LinkedList<>();
         for (Instance.Result result : Instance.Result.values()) {
             if (result.equals(Instance.Result.UNKNOWN))
                 continue;
-            List<Instance> partialInstances = instanceByClasses.get(result);
+            List<Instance> partialInstances = instancesByClasses.get(result);
             int reducedSize = (int) ((double)partialInstances.size()*ratio);
             Collections.shuffle(partialInstances);
             trainInstances.addAll(partialInstances.subList(0, reducedSize));
@@ -138,5 +142,18 @@ public class Dataset {
 
         Dataset testData = new Dataset(testInstances, this.getFeatures());
         return testData;
+    }
+
+    public Map<Instance.Result, List<Instance>> getInstancesByClasses() {
+        return instancesByClasses;
+    }
+
+    public void setLabel(Instance.Result result) {
+        this.dataset.stream().forEach(instance -> instance.setIsForeignKey(result));
+    }
+
+    public Dataset combineWith(Dataset minorityDataset) {
+        List<Instance> instances = ListUtils.union(this.dataset, minorityDataset.getDataset());
+        return new Dataset(instances, minorityDataset.getFeatures());
     }
 }

@@ -26,7 +26,7 @@ public class SVMW extends ClassifierW {
     }
 
     @Override
-    public void buildClassifier() throws Exception {
+    public Classifier buildClassifier() throws Exception {
         Evaluation eval = new Evaluation(data);
 
 //        SMO svm = new SMO();
@@ -42,5 +42,6 @@ public class SVMW extends ClassifierW {
         System.out.println(evaluation.toSummaryString("\nSVM Results\n", false));
         System.out.println(evaluation.toClassDetailsString("\nSVM Results\n"));
         System.out.println(evaluation.toMatrixString("\nSVM Confusing Matrix\n"));
+        return m_classifier;
     }
 }
