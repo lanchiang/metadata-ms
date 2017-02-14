@@ -16,12 +16,7 @@ import de.hpi.isg.mdms.java.fk.ClassificationSet;
 import de.hpi.isg.mdms.java.fk.Dataset;
 import de.hpi.isg.mdms.java.fk.Instance;
 import de.hpi.isg.mdms.java.fk.UnaryForeignKeyCandidate;
-import de.hpi.isg.mdms.java.fk.classifiers.*;
 import de.hpi.isg.mdms.java.fk.feature.*;
-import de.hpi.isg.mdms.java.fk.ml.classifier.AbstractClassifier;
-import de.hpi.isg.mdms.java.fk.ml.classifier.NaiveBayes;
-import de.hpi.isg.mdms.java.fk.ml.evaluation.CrossValidation;
-import de.hpi.isg.mdms.java.fk.ml.evaluation.FMeasure;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.targets.Target;
 import de.hpi.isg.mdms.model.util.IdUtils;
@@ -33,6 +28,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+
 /**
  * This app tries to distinguish actual foreign keys among a set of inclusion dependencies. For this purpose, it takes
  * as input a {@link ConstraintCollection} of
@@ -40,8 +36,6 @@ import java.util.stream.Stream;
  * the classified foreign keys.
  */
 public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.Parameters> {
-
-    private final List<PartialForeignKeyClassifier> partialClassifiers = new LinkedList<>();
 
     private List<Feature> features = new ArrayList<>();
 
@@ -150,18 +144,6 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
         this.features.add(new MultiReferencedFeature());
 
         Dataset dataset = new Dataset(instances, features);
-        dataset.buildDatasetStatistics();
-        dataset.buildFeatureValueDistribution();
-
-        AbstractClassifier classifier = new NaiveBayes();
-        classifier.setTrainingset(dataset);
-        classifier.setTestset(dataset);
-        classifier.train();
-        classifier.predict();
-
-        CrossValidation crossValidation = new CrossValidation(dataset, classifier);
-        crossValidation.execute();
-        crossValidation.getEvaluation().getResultByMetricName(FMeasure.class.getSimpleName());
 
         // Calculate the score for all the inclusion dependencies.
         final List<InclusionDependencyRating> indRatings = relevantInds.stream()
@@ -348,29 +330,6 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
             this.reasoning = reasoning;
         }
 
-        public String explain(DependencyPrettyPrinter prettyPrinter) {
-            StringBuilder sb = new StringBuilder();
-            sb.append("Rating: ").append(String.format("%.2f", this.score)).append(", because ");
-            String separator = "";
-            for (Map.Entry<UnaryForeignKeyCandidate, List<ClassificationSet>> entry : reasoning.entrySet()) {
-                final UnaryForeignKeyCandidate fkCandidate = entry.getKey();
-                InclusionDependency ind = new InclusionDependency(new InclusionDependency.Reference(
-                        new int[]{fkCandidate.getDependentColumnId()},
-                        new int[]{fkCandidate.getReferencedColumnId()}));
-                sb.append(separator).append(prettyPrinter.prettyPrint(ind)).append(": {");
-                separator = "";
-                for (ClassificationSet classificationSet : entry.getValue()) {
-                    for (PartialForeignKeyClassifier.WeightedResult weightedResult : classificationSet.getPartialResults()) {
-                        sb.append(separator).append(weightedResult);
-                        separator = ", ";
-                    }
-                    sb.append("}");
-                }
-                separator = ", ";
-            }
-
-            return sb.toString();
-        }
     }
 
     /**

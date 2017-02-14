@@ -26,6 +26,8 @@ public class CoverageFeature extends Feature {
     public CoverageFeature(ConstraintCollection columnStatsConstraintCollection) {
         featureName = COVERAGE_FEATURE_NAME;
 
+        featureType = FeatureType.Numeric;
+
         // Initialize the distinct value counts.
         this.distinctValues = new Int2LongOpenHashMap((int) columnStatsConstraintCollection.getConstraints().stream()
                 .filter(constraint -> constraint instanceof ColumnStatistics).count());
@@ -47,30 +49,8 @@ public class CoverageFeature extends Feature {
             double depDistinctValueCount = this.distinctValues.get(depColumnId);
             double refDistinctValueCount = this.distinctValues.get(refColumnId);
 
-            double coverage = depDistinctValueCount/refDistinctValueCount;
+            double coverage = depDistinctValueCount / refDistinctValueCount;
             instance.getFeatureVector().put(featureName, coverage);
         }
     }
-
-//    @Override
-//    public void calculateFeatureValueDistribution(Dataset dataset) {
-//        // count for each value in this feature, just for nominal type feature
-//        Map<Object, Double> eachValueCount = new HashMap<>();
-//
-//        for (Instance instance : dataset.getDataset()) {
-//            int depColumnId = instance.getForeignKeyCandidate().getDependentColumnId();
-//            int refColumnId = instance.getForeignKeyCandidate().getReferencedColumnId();
-//
-//            double depDistinctValueCount = this.distinctValues.get(depColumnId);
-//            double refDistinctValueCount = this.distinctValues.get(refColumnId);
-//
-//            double coverage = depDistinctValueCount/refDistinctValueCount;
-//            if (eachValueCount.containsKey(coverage)) {
-//                eachValueCount.put(coverage, eachValueCount.get(coverage)+1);
-//            } else {
-//                eachValueCount.put(coverage, 1.0);
-//            }
-//        }
-//        dataset.getFeatureValueDistribution().put(featureName, eachValueCount);
-//    }
 }

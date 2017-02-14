@@ -19,21 +19,6 @@ abstract public class Feature implements FeatureUpdate {
      */
     protected FeatureType featureType;
 
-    /**
-     * Indicate the count of distinct value.
-     */
-    protected long distinctCount;
-
-    /**
-     * Indicate the unique value count in this dataset.
-     */
-    protected long uniqueCount;
-
-    /**
-     * Indicate the missing value count.
-     */
-    protected long missingCount;
-
     public String getFeatureName() {
         return featureName;
     }
@@ -58,15 +43,12 @@ abstract public class Feature implements FeatureUpdate {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Feature feature = (Feature) o;
-        return distinctCount == feature.distinctCount &&
-                uniqueCount == feature.uniqueCount &&
-                missingCount == feature.missingCount &&
-                Objects.equals(featureName, feature.featureName) &&
+        return Objects.equals(featureName, feature.featureName) &&
                 featureType == feature.featureType;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(featureName, featureType, distinctCount, uniqueCount, missingCount);
+        return Objects.hash(featureName, featureType);
     }
 }
