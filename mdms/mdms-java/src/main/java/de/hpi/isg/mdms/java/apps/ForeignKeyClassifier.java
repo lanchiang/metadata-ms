@@ -81,13 +81,13 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
         getLogger().info("Loading FKs...");
         final ConstraintCollection fkCollection = this.metadataStore.getConstraintCollection(this.parameters.fkCollectionId);
         getLogger().info("Loading INDs...");
-        final ConstraintCollection indCollection = this.metadataStore.getConstraintCollection(this.parameters.indCollectionId);
+        final ConstraintCollection<? extends Constraint> indCollection = this.metadataStore.getConstraintCollection(this.parameters.indCollectionId);
         getLogger().info("Loading DVCs...");
-        final ConstraintCollection dvcCollection = this.metadataStore.getConstraintCollection(this.parameters.dvcCollectionId);
+        final ConstraintCollection<? extends Constraint> dvcCollection = this.metadataStore.getConstraintCollection(this.parameters.dvcCollectionId);
         getLogger().info("Loading UCCs...");
-        final ConstraintCollection uccCollection = this.metadataStore.getConstraintCollection(this.parameters.uccCollectionId);
+        final ConstraintCollection<? extends Constraint> uccCollection = this.metadataStore.getConstraintCollection(this.parameters.uccCollectionId);
         getLogger().info("Loading statistics...");
-        final ConstraintCollection statsCollection = this.metadataStore.getConstraintCollection(this.parameters.statisticsCollectionId);
+        final ConstraintCollection<? extends Constraint> statsCollection = this.metadataStore.getConstraintCollection(this.parameters.statisticsCollectionId);
 
         // Collect all not-null columns.
         getLogger().info("Detecting not-null columns...");

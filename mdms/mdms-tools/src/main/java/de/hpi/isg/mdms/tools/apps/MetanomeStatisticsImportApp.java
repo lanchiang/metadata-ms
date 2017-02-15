@@ -81,7 +81,16 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
         if (schema == null) {
             throw new IllegalArgumentException("No such schema: " + this.parameters.schemaName);
         }
-        ConstraintCollection constraintCollection = this.metadataStore.createConstraintCollection(this.parameters.getDescription(), schema);
+        ConstraintCollection<ColumnStatistics> constraintCollectionColumnStatistics =
+                this.metadataStore.createConstraintCollection(this.parameters.getDescription(), ColumnStatistics.class, schema);
+        ConstraintCollection<TupleCount> constraintCollectionTupleCounts =
+                this.metadataStore.createConstraintCollection(this.parameters.getDescription(), TupleCount.class, schema);
+        ConstraintCollection<TypeConstraint> constraintCollectionTypeConstraints =
+                this.metadataStore.createConstraintCollection(this.parameters.getDescription(), TypeConstraint.class, schema);
+        ConstraintCollection<NumberColumnStatistics> constraintCollectionNumberColumnStatistics =
+                this.metadataStore.createConstraintCollection(this.parameters.getDescription(), NumberColumnStatistics.class, schema);
+        ConstraintCollection<TextColumnStatistics> constraintCollectionTextColumnStatistics =
+                this.metadataStore.createConstraintCollection(this.parameters.getDescription(), TextColumnStatistics.class, schema);
 
 
         for (String inputDirectoryPath : this.parameters.inputDirectories) {
@@ -168,7 +177,9 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
         // Finalize.
         this.metadataStore.close();
 
-        this.executionMetadata.addCustomData(CONSTRAINT_COLLECTION_ID_KEY, constraintCollection.getId());
+        this.executionMetadata.addCustomData(CONSTRAINT_COLLECTION_ID_KEY, constraintCollectionColumnStatistics.getId());
+        this.executionMetadata.addCustomData(CONSTRAINT_COLLECTION_ID_KEY, constraintCollectionTextColumnStatistics.getId());
+        this.executionMetadata.addCustomData(CONSTRAINT_COLLECTION_ID_KEY, constraintCollectionNumberColumnStatistics.getId());
     }
 
     /**
@@ -178,7 +189,7 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
      * @param columnStatisticsObject input statistics of the column
      * @param column                 the column described by the input statistics
      */
-    private void extractTextColumnStatistics(ConstraintCollection constraintCollection, JSONObject columnStatisticsObject, Column column) {
+    private void extractTextColumnStatistics(ConstraintCollection<TextColumnStatistics> constraintCollection, JSONObject columnStatisticsObject, Column column) {
         if (columnStatisticsObject.has("Min String")) {
             TextColumnStatistics textColumnStatistics = new TextColumnStatistics(column.getId());
             textColumnStatistics.setMinValue(columnStatisticsObject.getJSONObject("Min String").getString("value"));
@@ -200,7 +211,7 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
      * @param columnStatisticsObject input statistics of the column
      * @param column                 the column described by the input statistics
      */
-    private void extractNumberColumnStatistics(ConstraintCollection constraintCollection, JSONObject columnStatisticsObject, Column column) {
+    private void extractNumberColumnStatistics(ConstraintCollection<NumberColumnStatistics> constraintCollection, JSONObject columnStatisticsObject, Column column) {
         if (columnStatisticsObject.has("Min")) {
             NumberColumnStatistics numberColumnStatistics = new NumberColumnStatistics(column.getId());
             numberColumnStatistics.setMinValue(columnStatisticsObject.getJSONObject("Min").getDouble("value"));
@@ -217,13 +228,15 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
     /**
      * Extracts statistics that apply to all columns.
      *
-     * @param constraintCollection   stores any created constraints
+     * @param typeConstraintsCC   stores any created type constraints
+     * @param columnStatisticsCC   stores any created column statistics constraints
      * @param columnStatisticsObject input statistics of the column
      * @param column                 the column described by the input statistics
      * @param numTuples              number of tuples in the table that contains the column
      */
     private void extractGeneralColumnStatistics(JSONObject columnStatisticsObject, Column column,
-                                                ConstraintCollection constraintCollection,
+                                                ConstraintCollection<ColumnStatistics> columnStatisticsCC,
+                                                ConstraintCollection<TypeConstraint> typeConstraintsCC,
                                                 long numTuples) {
         // Harvest the column type.
         final String dataType = columnStatisticsObject.getJSONObject("Data Type").getString("value");
@@ -275,7 +288,7 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
         }
 
         // Save the statistics.
-        constraintCollection.add(columnStatistics);
+        columnStatisticsCC.add(columnStatistics);
     }
 
     /**
@@ -286,7 +299,7 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
      * @param constraintCollection stores any new constraints
      * @return the number of tuples found in the statics file
      */
-    private long processFirstStatisticsFileLine(String firstLine, Table table, ConstraintCollection constraintCollection) {
+    private long processFirstStatisticsFileLine(String firstLine, Table table, ConstraintCollection<TupleCount> constraintCollection) {
         final JSONObject firstLineObject = new JSONObject(firstLine);
         final long numTuples = firstLineObject.getLong("# Tuples");
         TupleCount.buildAndAddToCollection(new SingleTargetReference(table.getId()), constraintCollection, (int) numTuples);
