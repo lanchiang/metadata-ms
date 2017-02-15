@@ -23,6 +23,7 @@ import de.hpi.isg.mdms.java.util.Instance;
 import de.hpi.isg.mdms.java.util.UnaryForeignKeyCandidate;
 import de.hpi.isg.mdms.java.feature.*;
 import de.hpi.isg.mdms.java.util.WekaConverter;
+import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.targets.Table;
 import de.hpi.isg.mdms.model.util.IdUtils;
@@ -79,7 +80,7 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
 
         // Load all relevant constraint collections.
         getLogger().info("Loading FKs...");
-        final ConstraintCollection fkCollection = this.metadataStore.getConstraintCollection(this.parameters.fkCollectionId);
+        final ConstraintCollection<? extends Constraint> fkCollection = this.metadataStore.getConstraintCollection(this.parameters.fkCollectionId);
         getLogger().info("Loading INDs...");
         final ConstraintCollection<? extends Constraint> indCollection = this.metadataStore.getConstraintCollection(this.parameters.indCollectionId);
         getLogger().info("Loading DVCs...");
@@ -141,7 +142,7 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
         getLogger().info("Detected {} relevant INDs from {} INDs overall.", relevantInds.size(), indCollection.getConstraints().size());
 
         final Set<UnaryForeignKeyCandidate> fkSet = fkCollection.getConstraints().stream()
-                .map(constraint -> (InclusionDependency)constraint)
+                .map(constraint -> (InclusionDependency) constraint)
                 .filter(ind -> {
                     int depCount = ind.getTargetReference().getDependentColumns().length;
                     return depCount==1?true:false;
