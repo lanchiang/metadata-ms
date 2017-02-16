@@ -38,10 +38,7 @@ public class J48W extends ClassifierW {
         System.out.println(evaluation.toSummaryString("\nJ48 Results\n", false));
         System.out.println(evaluation.toClassDetailsString("\nJ48 Results\n"));
         System.out.println(evaluation.toMatrixString("\nJ48 Confusing Matrix\n"));
-<<<<<<< Updated upstream
-=======
 
->>>>>>> Stashed changes
         return m_classifier;
     }
 }
