@@ -2,6 +2,7 @@ package de.hpi.isg.mdms.java.feature;
 
 import de.hpi.isg.mdms.domain.constraints.ColumnStatistics;
 import de.hpi.isg.mdms.java.util.Instance;
+import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import it.unimi.dsi.fastutil.ints.Int2LongMap;
 import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap;
@@ -24,7 +25,7 @@ public class CoverageFeature extends Feature {
         distinctValues = new Int2LongOpenHashMap();
     }
 
-    public CoverageFeature(ConstraintCollection columnStatsConstraintCollection) {
+    public CoverageFeature(ConstraintCollection<? extends Constraint> columnStatsConstraintCollection) {
         featureName = COVERAGE_FEATURE_NAME;
         featureType = FeatureType.Numeric;
 
