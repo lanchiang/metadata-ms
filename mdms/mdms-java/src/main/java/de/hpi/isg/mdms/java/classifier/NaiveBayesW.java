@@ -41,6 +41,10 @@ public class NaiveBayesW extends ClassifierW {
         System.out.println(evaluation.toSummaryString("\nNaiveBayes Results\n", false));
         System.out.println(evaluation.toClassDetailsString("\nNaiveBayes Results\n"));
         System.out.println(evaluation.toMatrixString("\nNaive Bayes Confusing Matrix\n"));
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
         return m_classifier;
     }
 }

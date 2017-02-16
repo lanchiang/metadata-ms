@@ -42,6 +42,10 @@ public class SVMW extends ClassifierW {
         System.out.println(evaluation.toSummaryString("\nSVM Results\n", false));
         System.out.println(evaluation.toClassDetailsString("\nSVM Results\n"));
         System.out.println(evaluation.toMatrixString("\nSVM Confusing Matrix\n"));
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
         return m_classifier;
     }
 }
