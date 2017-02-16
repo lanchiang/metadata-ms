@@ -15,6 +15,7 @@ import de.hpi.isg.mdms.java.classifier.DecisionTableW;
 import de.hpi.isg.mdms.java.classifier.J48W;
 import de.hpi.isg.mdms.java.classifier.NaiveBayesW;
 import de.hpi.isg.mdms.java.classifier.SVMW;
+import de.hpi.isg.mdms.java.metrics.ConfusionMatrix;
 import de.hpi.isg.mdms.java.sampling.EasyEnsemble;
 import de.hpi.isg.mdms.java.util.Dataset;
 import de.hpi.isg.mdms.java.util.Instance;
@@ -220,11 +221,18 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
             testData = loader.getDataSet();
             testData.setClassIndex(testData.numAttributes()-1);
 
-            Map<String, Integer> confusionMatrix = new HashMap<>();
-            confusionMatrix.putIfAbsent("fkfk", 0);
-            confusionMatrix.putIfAbsent("fknfk", 0);
-            confusionMatrix.putIfAbsent("nfkfk", 0);
-            confusionMatrix.putIfAbsent("nfknfk", 0);
+            Map<String, Integer> labels = new HashMap<>();
+            int index = 0;
+            for (Instance.Result result : testSet.getInstancesByClasses().keySet()) {
+                labels.putIfAbsent(result.toString(), index++);
+            }
+
+//            Map<String, Integer> confusionMatrix = new HashMap<>();
+//            confusionMatrix.putIfAbsent("fkfk", 0);
+//            confusionMatrix.putIfAbsent("fknfk", 0);
+//            confusionMatrix.putIfAbsent("nfkfk", 0);
+//            confusionMatrix.putIfAbsent("nfknfk", 0);
+            ConfusionMatrix confusionMatrix = new ConfusionMatrix(labels.size(), labels.size(), labels);
             List<weka.core.Instance> correctlyClassified = testData.stream()
                     .filter(instance -> {
                         List<String> results = Arrays.stream(classifiers).map(classifier -> {
@@ -241,66 +249,56 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
                         long nonFKCount = results.stream().filter(s -> s.equals("NO_FOREIGN_KEY")).count();
                         long FKCount = results.stream().filter(s -> s.equals("FOREIGN_KEY")).count();
                         String predicted = (nonFKCount>=FKCount)?"NON_FOREIGN_KEY":"FOREIGN_KEY";
-                        if (actual.equals("FOREIGN_KEY")) {
-                            if (predicted.equals("FOREIGN_KEY")) {
-                                confusionMatrix.put("fkfk",confusionMatrix.get("fkfk")+1);
-                            } else {
-                                confusionMatrix.put("fknfk", confusionMatrix.get("fknfk")+1);
-                            }
-                        } else {
-                            if (predicted.equals("FOREIGN_KEY")) {
-                                confusionMatrix.put("nfkfk",confusionMatrix.get("nfkfk")+1);
-                            } else {
-                                confusionMatrix.put("nfknfk", confusionMatrix.get("nfknfk")+1);
-                            }
-                        }
+                        int indexActual = labels.get(actual);
+                        int indexPredicted = labels.get(predicted);
+                        confusionMatrix.set(indexActual, indexPredicted, confusionMatrix.get(indexActual, indexPredicted)+1);
                         if (actual.equals(predicted)) {
                             return true;
                         }
                         return false;
                     }).collect(Collectors.toList());
 
-            System.out.println();
-            System.out.println("EasyEnsemble");
-            System.out.println();
-            System.out.println("FOREIGN_KEY" + "\t" + "NO_FOREIGN_KEY" + "\t" + "<--predicted");
-            System.out.println(confusionMatrix.get("fkfk")+"\t"+confusionMatrix.get("fknfk")+"\t"+"FOREIGN_KEY");
-            System.out.println(confusionMatrix.get("nfkfk")+"\t"+confusionMatrix.get("nfknfk")+"\t"+"NO_FOREIGN_KEY");
-            DecimalFormat df = new DecimalFormat("0.000");
-
-            System.out.println();
-            System.out.println("Accuracy: " + "\t" + Double.parseDouble(df.format((double) correctlyClassified.size() / (double) testData.size())));
-
-            double fkfkD = (double) confusionMatrix.get("fkfk");
-            double fknfkD = (double) confusionMatrix.get("fknfk");
-            double nfknfkD = (double) confusionMatrix.get("nfknfk");
-            double nfkfkD = (double) confusionMatrix.get("nfkfk");
-
-            System.out.println("Kappa: " + "\t" + kappa(fkfkD, fknfkD, nfknfkD, nfkfkD));
-            System.out.println("G-Score: " + "\t" + geomatric(fkfkD, fknfkD, nfknfkD, nfkfkD));
-            System.out.println();
-
-            fkfkD = Double.parseDouble(df.format((double) confusionMatrix.get("fkfk")));
-            fknfkD = Double.parseDouble(df.format((double) confusionMatrix.get("fknfk")));
-            nfknfkD = Double.parseDouble(df.format((double) confusionMatrix.get("nfknfk")));
-            nfkfkD = Double.parseDouble(df.format((double) confusionMatrix.get("nfkfk")));
-
-            System.out.println("Precision"+"\t"+"Recall"+"\t"+"F-Measure");
-            double precision = Double.parseDouble(df.format(fkfkD/(fkfkD+nfkfkD)));
-            double recall = Double.parseDouble(df.format(fkfkD/(fkfkD+fknfkD)));
-            double fmeasure = Double.parseDouble(df.format(fMeasure(precision, recall)));
-            double partial_precision = Double.parseDouble(df.format(precision * (fkfkD+fknfkD)/(fkfkD+fknfkD+nfkfkD+nfknfkD)));
-            double partial_recall = Double.parseDouble(df.format(recall * (fkfkD+fknfkD)/(fkfkD+fknfkD+nfkfkD+nfknfkD)));
-            double partial_fmeasure = Double.parseDouble(df.format(fmeasure * (fkfkD+fknfkD)/(fkfkD+fknfkD+nfkfkD+nfknfkD)));
-            System.out.println(precision+"\t"+recall+"\t"+fmeasure+"\t"+"FOREIGN_KEY");
-            precision = Double.parseDouble(df.format(nfknfkD/(nfknfkD+fknfkD)));
-            recall = Double.parseDouble(df.format(nfknfkD/(nfknfkD+nfkfkD)));
-            fmeasure = Double.parseDouble(df.format(fMeasure(precision,recall)));
-            partial_precision += Double.parseDouble(df.format(precision * (nfkfkD+nfknfkD)/(fkfkD+fknfkD+nfkfkD+nfknfkD)));
-            partial_recall += Double.parseDouble(df.format(recall * (nfkfkD+nfknfkD)/(fkfkD+fknfkD+nfkfkD+nfknfkD)));
-            partial_fmeasure += Double.parseDouble(df.format(fmeasure * (nfkfkD+nfknfkD)/(fkfkD+fknfkD+nfkfkD+nfknfkD)));
-            System.out.println(precision+"\t"+recall+"\t"+fmeasure+"\t"+"NO_FOREIGN_KEY");
-            System.out.println(partial_precision + "\t" + partial_recall + "\t" + partial_fmeasure + "\t" + "weighted overall");
+//            System.out.println();
+//            System.out.println("EasyEnsemble");
+//            System.out.println();
+//            System.out.println("FOREIGN_KEY" + "\t" + "NO_FOREIGN_KEY" + "\t" + "<--predicted");
+//            System.out.println(confusionMatrix.get("fkfk")+"\t"+confusionMatrix.get("fknfk")+"\t"+"FOREIGN_KEY");
+//            System.out.println(confusionMatrix.get("nfkfk")+"\t"+confusionMatrix.get("nfknfk")+"\t"+"NO_FOREIGN_KEY");
+//            DecimalFormat df = new DecimalFormat("0.000");
+//
+//            System.out.println();
+//            System.out.println("Accuracy: " + "\t" + Double.parseDouble(df.format((double) correctlyClassified.size() / (double) testData.size())));
+//
+//            double fkfkD = (double) confusionMatrix.get("fkfk");
+//            double fknfkD = (double) confusionMatrix.get("fknfk");
+//            double nfknfkD = (double) confusionMatrix.get("nfknfk");
+//            double nfkfkD = (double) confusionMatrix.get("nfkfk");
+//
+//            System.out.println("Kappa: " + "\t" + kappa(fkfkD, fknfkD, nfknfkD, nfkfkD));
+//            System.out.println("G-Score: " + "\t" + geomatric(fkfkD, fknfkD, nfknfkD, nfkfkD));
+//            System.out.println();
+//
+//            fkfkD = Double.parseDouble(df.format((double) confusionMatrix.get("fkfk")));
+//            fknfkD = Double.parseDouble(df.format((double) confusionMatrix.get("fknfk")));
+//            nfknfkD = Double.parseDouble(df.format((double) confusionMatrix.get("nfknfk")));
+//            nfkfkD = Double.parseDouble(df.format((double) confusionMatrix.get("nfkfk")));
+//
+//            System.out.println("Precision"+"\t"+"Recall"+"\t"+"F-Measure");
+//            double precision = Double.parseDouble(df.format(fkfkD/(fkfkD+nfkfkD)));
+//            double recall = Double.parseDouble(df.format(fkfkD/(fkfkD+fknfkD)));
+//            double fmeasure = Double.parseDouble(df.format(fMeasure(precision, recall)));
+//            double partial_precision = Double.parseDouble(df.format(precision * (fkfkD+fknfkD)/(fkfkD+fknfkD+nfkfkD+nfknfkD)));
+//            double partial_recall = Double.parseDouble(df.format(recall * (fkfkD+fknfkD)/(fkfkD+fknfkD+nfkfkD+nfknfkD)));
+//            double partial_fmeasure = Double.parseDouble(df.format(fmeasure * (fkfkD+fknfkD)/(fkfkD+fknfkD+nfkfkD+nfknfkD)));
+//            System.out.println(precision+"\t"+recall+"\t"+fmeasure+"\t"+"FOREIGN_KEY");
+//            precision = Double.parseDouble(df.format(nfknfkD/(nfknfkD+fknfkD)));
+//            recall = Double.parseDouble(df.format(nfknfkD/(nfknfkD+nfkfkD)));
+//            fmeasure = Double.parseDouble(df.format(fMeasure(precision,recall)));
+//            partial_precision += Double.parseDouble(df.format(precision * (nfkfkD+nfknfkD)/(fkfkD+fknfkD+nfkfkD+nfknfkD)));
+//            partial_recall += Double.parseDouble(df.format(recall * (nfkfkD+nfknfkD)/(fkfkD+fknfkD+nfkfkD+nfknfkD)));
+//            partial_fmeasure += Double.parseDouble(df.format(fmeasure * (nfkfkD+nfknfkD)/(fkfkD+fknfkD+nfkfkD+nfknfkD)));
+//            System.out.println(precision+"\t"+recall+"\t"+fmeasure+"\t"+"NO_FOREIGN_KEY");
+//            System.out.println(partial_precision + "\t" + partial_recall + "\t" + partial_fmeasure + "\t" + "weighted overall");
         } catch (IOException e) {
             e.printStackTrace();
         }
